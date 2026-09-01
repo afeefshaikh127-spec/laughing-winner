@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FreshCart Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+:root{
+  --ink:#16231c; --green-900:#123524; --green-700:#1f6b45; --green-600:#2c8a58; --green-500:#37a06a;
+  --cream:#faf7ef; --paper:#ffffff; --line:#e7e2d4; --mango:#e2932a; --tomato:#c9532f; --muted:#767c72;
+  --radius:14px; --shadow:0 8px 24px -14px rgba(18,53,36,.28); --sidebar-w:230px;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;}
+h1,h2,h3,.display{font-family:'Sora',system-ui,sans-serif;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;text-decoration:none;}
+table{border-collapse:collapse;width:100%;}
+
+/* Layout */
+#adminApp{display:flex;min-height:100vh;}
+.sidebar{
+  width:var(--sidebar-w);background:linear-gradient(180deg,var(--green-900),#0d2519);color:#fff;
+  position:fixed;top:0;left:0;bottom:0;padding:22px 14px;display:flex;flex-direction:column;z-index:30;
+}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:0 8px 22px;}
+.sidebar .brand .logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.sidebar .brand b{font-family:'Sora';font-size:16px;}
+.sidebar .brand small{display:block;font-size:10px;color:rgba(255,255,255,.6);}
+.navlink{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;font-size:13px;font-weight:600;color:rgba(255,255,255,.75);margin-bottom:2px;}
+.navlink .ic{font-size:16px;width:20px;text-align:center;}
+.navlink.active{background:rgba(255,255,255,.12);color:#fff;}
+.navlink:hover{background:rgba(255,255,255,.08);}
+.sidebar .bottom{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);}
+.admin-chip{display:flex;align-items:center;gap:10px;padding:8px;font-size:12px;}
+.admin-chip .av{width:30px;height:30px;border-radius:50%;background:var(--green-600);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
+.logoutbtn{width:100%;background:rgba(255,255,255,.1);border:none;color:#fff;padding:9px;border-radius:9px;font-size:12px;font-weight:600;margin-top:8px;}
+
+.main{margin-left:var(--sidebar-w);flex:1;padding:26px 30px 60px;max-width:1280px;}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s;}
+  .sidebar.open{transform:none;}
+  .main{margin-left:0;padding:18px;}
+  .menutoggle{display:inline-flex !important;}
+}
+.menutoggle{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;width:38px;height:38px;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px;}
+
+.pagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.pagehead h1{font-size:21px;margin:0;}
+.pagehead p{margin:2px 0 0;color:var(--muted);font-size:13px;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px;border:none;font-weight:700;font-size:13px;}
+.btn-primary{background:var(--green-700);color:#fff;}
+.btn-outline{background:#fff;border:1.5px solid var(--line);color:var(--ink);}
+.btn-danger{background:#fdecea;color:var(--tomato);}
+.btn-sm{padding:7px 11px;font-size:12px;border-radius:8px;}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px;}
+.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;}
+.stat .lbl{font-size:12px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;}
+.stat .val{font-size:22px;font-weight:800;margin-top:8px;font-family:'Sora';}
+.stat .sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.stat.warn .val{color:var(--tomato);}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:20px;}
+.panel h3{margin:0 0 14px;font-size:15px;}
+.chart-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+@media(max-width:860px){.chart-grid{grid-template-columns:1fr;}}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.toolbar input,.toolbar select{padding:9px 12px;border-radius:9px;border:1.5px solid var(--line);font-size:13px;}
+.toolbar input{flex:1;min-width:180px;}
+
+table.datatable{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.datatable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--cream);padding:11px 14px;}
+.datatable td{padding:12px 14px;font-size:13px;border-top:1px solid var(--line);vertical-align:middle;}
+.datatable tr:hover td{background:#fbfbf8;}
+.imgthumb{width:38px;height:38px;border-radius:9px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;}
+.imgthumb img{width:100%;height:100%;object-fit:cover;}
+.rowactions{display:flex;gap:6px;}
+
+.chip{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.chip.PLACED{background:#fff3d6;color:#946200;} .chip.CONFIRMED{background:#dbeeff;color:#1c5fa6;}
+.chip.PREPARING{background:#fde3c7;color:#a35a0b;} .chip.READY{background:#e4dbff;color:#5b34c9;}
+.chip.OUT_FOR_DELIVERY{background:#d6f0ff;color:#0b6ea3;} .chip.DELIVERED{background:#dcf5e4;color:#1a7d43;}
+.chip.CANCELLED{background:#fbdcdc;color:#a12525;} .chip.PAID{background:#dcf5e4;color:#1a7d43;}
+.chip.PENDING{background:#fff3d6;color:#946200;} .chip.FAILED{background:#fbdcdc;color:#a12525;}
+.chip.REFUNDED{background:#e4e4e4;color:#555;} .chip.active-yes{background:#dcf5e4;color:#1a7d43;} .chip.active-no{background:#f1f1f1;color:#888;}
+.chip.low{background:#fde3c7;color:#a35a0b;} .chip.out{background:#fbdcdc;color:#a12525;}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,15,.5);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px;}
+.modal-card{background:#fff;border-radius:18px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:24px;}
+.modal-card h3{margin:0 0 16px;}
+.field{margin-bottom:13px;}
+.field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);font-size:13px;outline:none;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+.checkrow{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:8px 0;}
+
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--green-900),var(--green-700));}
+.login-card{background:#fff;border-radius:20px;padding:34px;width:100%;max-width:380px;box-shadow:var(--shadow);}
+.login-card .ic{font-size:40px;text-align:center;}
+.login-card h2{text-align:center;margin:8px 0 2px;}
+.login-card p{text-align:center;color:var(--muted);font-size:12px;margin:0 0 22px;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;z-index:100;box-shadow:var(--shadow);}
+.empty{padding:50px;text-align:center;color:var(--muted);}
+.empty .ic{font-size:38px;margin-bottom:10px;}
+.skeleton{background:linear-gradient(90deg,#eee,#f6f6f6,#eee);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:10px;height:14px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+.tabbtn{padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;background:none;border-left:none;border-right:none;border-top:none;}
+.tabbtn.active{color:var(--green-700);border-bottom-color:var(--green-700);}
+.qr-preview{width:90px;height:90px;border-radius:10px;background:var(--cream);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.qr-preview img{width:100%;height:100%;object-fit:cover;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   FIREBASE CONFIG — same project as the customer app.
+   Replace with your project's config, or set
+   window.__FIREBASE_CONFIG__ before this file loads.
+========================================================= */
+const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+  apiKey: "AIzaSyBp8_imLgD5QSHpvBTdMB71LW_T4zK62_E",
+  authDomain: "freshcart-c68d3.firebaseapp.com",
+  projectId: "freshcart-c68d3",
+  storageBucket: "freshcart-c68d3.firebasestorage.app",
+  messagingSenderId: "75372139912",
+  appId: "1:75372139912:web:1da4e482f12a00eddbd63d"
+};
+let fbReady = false;
+try{ firebase.initializeApp(firebaseConfig); fbReady = firebaseConfig.apiKey !== "YOUR_API_KEY"; }catch(e){ console.error(e); }
+const auth = fbReady ? firebase.auth() : null;
+const db = fbReady ? firebase.firestore() : null;
+// No Firebase Storage in this build: every image (product, category,
+// store logo, promo banner, payment QR code) is picked from disk,
+// downscaled + compressed in the browser with a <canvas>, and saved
+// as a base64 data-URL string directly on the Firestore document.
+// That keeps things to two plain HTML files with zero extra backend
+// setup, at the cost of Firestore's ~1MiB per-document limit — the
+// compression below targets well under that per image.
+
+/* NOTE on admin authorization (read before deploying):
+   The login screen you see asks for a plain username + password
+   (not an email) — that's what this section implements. Firebase
+   itself only understands email/password accounts, and Firestore
+   security rules only understand a signed-in request.auth.uid, so
+   under the hood this file:
+     1. Checks the username/password you type against a hash stored
+        in Firestore (adminCredentials/default) — or, the very first
+        time, against the built-in default below.
+     2. If it matches, signs into ONE fixed, hidden Firebase Auth
+        account (ADMIN_INTERNAL_EMAIL) that exists only to satisfy
+        the Firestore rules' isAdmin() check. You never see or type
+        its password — it's just plumbing.
+   Change your username/password any time from Admin Panel 
+   Account Settings (bottom of the sidebar).
+
+   Caveat to know about: because there's no server here, the stored
+   password hash has to be readable by the browser before login
+   succeeds, which means it's technically fetchable by anyone who
+   inspects network traffic — a determined attacker could attempt to
+   crack a weak password offline. Use a password you don't reuse
+   elsewhere, and see README.md for how to close this gap properly
+   with a Cloud Function if this ever handles real customer data. */
+
+// Fixed hidden Firebase Auth account used only so Firestore's
+// isAdmin() rule (which needs request.auth) has something to check.
+// Set this up once — see README.md "Admin login setup" — then never
+// touch it again. It is NOT the username/password you log in with.
+const ADMIN_INTERNAL_EMAIL = "internal-admin@freshcart-c68d3.firebaseapp.com";
+const ADMIN_INTERNAL_PASSWORD = "BM8GyzLvDdxuf6lqnMS8NmHB3rYeSdjc";
+
+// Used only if no adminCredentials/default document exists yet
+// (i.e. before you've ever changed the password in Account Settings).
+const DEFAULT_ADMIN_USERNAME = "adminoffreshcart";
+const DEFAULT_ADMIN_PASSWORD = "letmein";
+
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function getAdminCredentials(){
+  try{
+    const doc = await db.collection('adminCredentials').doc('default').get();
+    if(doc.exists) return doc.data();
+  }catch(e){ /* fall through to default */ }
+  return { username: DEFAULT_ADMIN_USERNAME, passwordHash: await sha256Hex(DEFAULT_ADMIN_PASSWORD) };
+}
+
+const CATEGORY_EMOJI = {"Vegetables":"","Fruits":"","Dairy":"","Bakery":"","Snacks":"","Beverages":"","Rice & Grains":"","Pulses":"","Spices":"","Household":"","Personal Care":"","Instant Food":""};
+function catEmoji(n){ return CATEGORY_EMOJI[n] || ""; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function inr(n){ return ''+(Math.round((n||0)*100)/100).toLocaleString('en-IN'); }
+const STATUS_STEPS=['PLACED','CONFIRMED','PREPARING','READY','OUT_FOR_DELIVERY','DELIVERED'];
+
+let state = {
+  loading:true, screen: fbReady ? 'login' : 'config', user:null, isAdmin:false, authError:null,
+  page:'dashboard', sidebarOpen:false,
+  categories:[], products:[], orders:[], payments:[], customers:[], coupons:[], paymentSettings:null, storeSettings:null,
+  modal:null, editing:null, toastMsg:null,
+  orderFilter:'ALL', orderSearch:'', paymentFilter:'ALL', paymentSearch:'', productSearch:'',
+  activeTab:'history',
+};
+window.state = state;
+
+function toast(msg){ state.toastMsg=msg; render(); setTimeout(()=>{state.toastMsg=null;render();},2400); }
+function go(page){ state.page=page; state.sidebarOpen=false; render(); }
+function openModal(name, editing=null){ state.modal=name; state.editing=editing; render(); }
+function closeModal(){ state.modal=null; state.editing=null; render(); }
+
+/* ---------------- Auth ---------------- */
+function initAuth(){
+  if(!fbReady){ state.loading=false; render(); return; }
+  auth.onAuthStateChanged(async (u)=>{
+    state.user=u;
+    if(u){
+      try{
+        const doc = await db.collection('users').doc(u.uid).get();
+        state.isAdmin = doc.exists && doc.data().role==='admin';
+      }catch(e){ state.isAdmin=false; }
+      if(!state.isAdmin){
+        state.authError = 'This account does not have admin access. See README.md "Admin login setup".';
+        await auth.signOut();
+        state.user=null; state.screen='login';
+      } else {
+        state.screen='app';
+        await loadAll();
+      }
+    } else {
+      state.screen='login';
+    }
+    state.loading=false;
+    render();
+  });
+}
+async function handleAdminLogin(e){
+  e.preventDefault();
+  const f=e.target, username=f.username.value.trim(), pass=f.password.value;
+  const btn=f.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Signing in…';
+  state.authError = null;
+  try{
+    const creds = await getAdminCredentials();
+    const hash = await sha256Hex(pass);
+    if(username !== creds.username || hash !== creds.passwordHash){
+      state.authError = 'Incorrect username or password.';
+      render();
+      return;
+    }
+    await auth.signInWithEmailAndPassword(ADMIN_INTERNAL_EMAIL, ADMIN_INTERNAL_PASSWORD);
+  }catch(err){
+    state.authError = (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')
+      ? 'Admin login isn\'t set up yet in Firebase — see README.md "Admin login setup".'
+      : err.message;
+    render();
+  }
+}
+function handleAdminLogout(){ auth.signOut(); go('dashboard'); }
+async function refreshData(){
+  const btn = document.getElementById('refreshBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Refreshing…'; }
+  await loadAll();
+  if(btn){ btn.disabled = false; btn.textContent = ' Refresh Data'; }
+  toast('Data refreshed');
+  render();
+}
+window.refreshData = refreshData;
+
+async function saveAdminCredentials(e){
+  e.preventDefault();
+  const f = e.target;
+  const currentPass = f.currentPassword.value;
+  const newUsername = f.newUsername.value.trim();
+  const newPassword = f.newPassword.value;
+  const confirmPassword = f.confirmPassword.value;
+  if(newPassword !== confirmPassword){ toast("New passwords don't match"); return; }
+  if(newPassword.length < 6){ toast('New password should be at least 6 characters'); return; }
+  try{
+    const creds = await getAdminCredentials();
+    const currentHash = await sha256Hex(currentPass);
+    if(currentHash !== creds.passwordHash){ toast('Current password is incorrect'); return; }
+    const newHash = await sha256Hex(newPassword);
+    await db.collection('adminCredentials').doc('default').set({ username:newUsername, passwordHash:newHash });
+    toast('Login details updated');
+    f.reset();
+  }catch(err){ toast(err.message); }
+}
+window.saveAdminCredentials = saveAdminCredentials;
+
+/* ---------------- Data loading ---------------- */
+async function loadAll(){
+  try{
+    const [cats, prods, ords, pays, users, cpns, psets, ssets] = await Promise.all([
+      db.collection('categories').get(),
+      db.collection('products').get(),
+      db.collection('orders').orderBy('createdAt','desc').get(),
+      db.collection('payments').orderBy('createdAt','desc').get(),
+      db.collection('users').where('role','==','customer').get(),
+      db.collection('coupons').get(),
+      db.collection('paymentSettings').doc('default').get(),
+      db.collection('storeSettings').doc('default').get(),
+    ]);
+    state.categories = cats.docs.map(d=>({id:d.id,...d.data()}));
+    state.products = prods.docs.map(d=>({id:d.id,...d.data()}));
+    state.orders = ords.docs.map(d=>({id:d.id,...d.data()}));
+    state.payments = pays.docs.map(d=>({id:d.id,...d.data()}));
+    state.customers = users.docs.map(d=>({id:d.id,...d.data()}));
+    state.coupons = cpns.docs.map(d=>({id:d.id,...d.data()}));
+    state.paymentSettings = psets.exists ? psets.data() : {merchantName:'',upiId:'',qrCodeUrl:'',onlinePaymentEnabled:false,codEnabled:true};
+    state.storeSettings = ssets.exists ? ssets.data() : {storeName:'FreshCart',logoUrl:'',bannerUrl:''};
+  }catch(e){ toast('Load error: '+e.message); }
+}
+
+/* ---------------- Derived stats ---------------- */
+function isToday(ts){ if(!ts?.toDate) return false; const d=ts.toDate(), t=new Date(); return d.toDateString()===t.toDateString(); }
+function statsBundle(){
+  const todays = state.orders.filter(o=>isToday(o.createdAt));
+  const totalSales = state.orders.reduce((s,o)=>s+(o.total||0),0);
+  const todaySales = todays.reduce((s,o)=>s+(o.total||0),0);
+  const pending = state.orders.filter(o=>!['DELIVERED','CANCELLED'].includes(o.orderStatus)).length;
+  const completed = state.orders.filter(o=>o.orderStatus==='DELIVERED').length;
+  const onlineAmt = state.orders.filter(o=>o.paymentMethod==='ONLINE' && o.paymentStatus==='PAID').reduce((s,o)=>s+o.total,0);
+  const codAmt = state.orders.filter(o=>o.paymentMethod==='COD' && o.orderStatus==='DELIVERED').reduce((s,o)=>s+o.total,0);
+  const lowStock = state.products.filter(p=>p.stock>0 && p.stock<10).length;
+  const outStock = state.products.filter(p=>(p.stock||0)<=0).length;
+  return {totalSales, todaySales, totalOrders:state.orders.length, pending, completed, onlineAmt, codAmt, customers:state.customers.length, lowStock, outStock};
+}
+
+/* ---------------- Image upload  compressed base64 ---------------- */
+function fileToCompressedDataURL(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not read image'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > h){ if(w > maxDim){ h = Math.round(h * maxDim/w); w = maxDim; } }
+        else { if(h > maxDim){ w = Math.round(w * maxDim/h); h = maxDim; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function handleImageFile(event, hiddenId, previewId, maxDim){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast('Please choose an image file'); return; }
+  if(file.size > 10*1024*1024){ toast('Image too large — please choose one under 10MB'); return; }
+  const preview = document.getElementById(previewId);
+  if(preview) preview.innerHTML = `<div class="skeleton" style="width:100%;height:100%;"></div>`;
+  try{
+    const dataUrl = await fileToCompressedDataURL(file, maxDim || 500, 0.72);
+    const hidden = document.getElementById(hiddenId);
+    if(hidden) hidden.value = dataUrl;
+    if(preview) preview.innerHTML = `<img src="${dataUrl}">`;
+  }catch(err){
+    toast(err.message || 'Could not process image');
+    if(preview) preview.innerHTML = 'No image';
+  }
+}
+window.handleImageFile = handleImageFile;
+
+/* ---------------- Render root ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  if(!fbReady){ app.innerHTML = renderConfigNeeded(); return; }
+  if(state.loading){ app.innerHTML = `<div class="login-wrap"><div style="color:#fff;">Loading…</div></div>`; return; }
+  if(state.screen==='login'){ app.innerHTML = renderLogin(); return; }
+  let body='';
+  switch(state.page){
+    case 'dashboard': body=renderDashboard(); break;
+    case 'products': body=renderProducts(); break;
+    case 'categories': body=renderCategories(); break;
+    case 'inventory': body=renderInventory(); break;
+    case 'orders': body=renderOrders(); break;
+    case 'payments': body=renderPayments(); break;
+    case 'customers': body=renderCustomers(); break;
+    case 'offers': body=renderOffers(); break;
+    case 'store': body=renderStoreSettings(); break;
+    case 'account': body=renderAccountSettings(); break;
+    case 'demo': body=renderDemoData(); break;
+    default: body=renderDashboard();
+  }
+  app.innerHTML = renderShell(body) + renderModal();
+  attachAfterRender();
+}
+
+function renderConfigNeeded(){
+  return `<div class="login-wrap"><div class="login-card"><div class="ic"></div>
+    <h2>Connect Firebase</h2>
+    <p>Set <code>firebaseConfig</code> at the top of admin.html (same project as index.html), then reload. See README.md for full setup steps.</p>
+  </div></div>`;
+}
+
+function renderLogin(){
+  return `<div class="login-wrap"><div class="login-card">
+    <div class="ic"></div><h2>Admin Sign In</h2><p>FreshCart Admin Panel</p>
+    ${state.authError?`<div style="background:#fdecea;color:var(--tomato);padding:10px;border-radius:10px;font-size:12px;margin-bottom:14px;">${esc(state.authError)}</div>`:''}
+    <form onsubmit="handleAdminLogin(event)">
+      <div class="field"><label>Username</label><input name="username" required placeholder="adminoffreshcart" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px;" type="submit">Sign In</button>
+    </form>
+    <p style="font-size:11px;color:var(--muted);margin-top:16px;text-align:center;">You can change your username and password from Account Settings after signing in.</p>
+  </div></div>`;
+}
+
+const NAV = [
+  {k:'dashboard',ic:'',lbl:'Dashboard'},
+  {k:'products',ic:'',lbl:'Products'},
+  {k:'categories',ic:'',lbl:'Categories'},
+  {k:'inventory',ic:'',lbl:'Inventory'},
+  {k:'orders',ic:'',lbl:'Orders'},
+  {k:'payments',ic:'',lbl:'Payments'},
+  {k:'customers',ic:'',lbl:'Customers'},
+  {k:'offers',ic:'',lbl:'Offers & Coupons'},
+  {k:'store',ic:'',lbl:'Store Settings'},
+  {k:'account',ic:'',lbl:'Account Settings'},
+  {k:'demo',ic:'',lbl:'Demo Data'},
+];
+function renderShell(body){
+  return `<div id="adminApp">
+    <div class="sidebar ${state.sidebarOpen?'open':''}">
+      <div class="brand"><div class="logo"></div><div><b>FreshCart</b><small>Admin Panel</small></div></div>
+      <div>${NAV.map(n=>`<a class="navlink ${state.page===n.k?'active':''}" href="javascript:void(0)" onclick="go('${n.k}')"><span class="ic">${n.ic}</span>${n.lbl}</a>`).join('')}</div>
+      <div class="bottom">
+        <div class="admin-chip"><div class="av"></div><div>Admin</div></div>
+        <button class="logoutbtn" id="refreshBtn" style="background:rgba(255,255,255,.16);" onclick="refreshData()"> Refresh Data</button>
+        <button class="logoutbtn" onclick="handleAdminLogout()">Log Out</button>
+      </div>
+    </div>
+    <div class="main">
+      <button class="menutoggle" onclick="state.sidebarOpen=!state.sidebarOpen;render()"></button>
+      ${body}
+    </div>
+  </div>` + (state.toastMsg?`<div class="toast">${esc(state.toastMsg)}</div>`:'');
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  const s = statsBundle();
+  return `
+  <div class="pagehead"><div><h1>Dashboard</h1><p>Overview of store performance</p></div></div>
+  <div class="cards">
+    ${statCard("Today's Sales", inr(s.todaySales))}
+    ${statCard('Total Sales', inr(s.totalSales))}
+    ${statCard('Total Orders', s.totalOrders)}
+    ${statCard('Pending Orders', s.pending)}
+    ${statCard('Completed Orders', s.completed)}
+    ${statCard('Online Payments', inr(s.onlineAmt))}
+    ${statCard('COD Amount', inr(s.codAmt))}
+    ${statCard('Customers', s.customers)}
+    ${statCard('Low Stock', s.lowStock, s.lowStock>0)}
+    ${statCard('Out of Stock', s.outStock, s.outStock>0)}
+  </div>
+  <div class="chart-grid">
+    <div class="panel"><h3>Sales — last 7 days</h3><canvas id="salesChart" height="220"></canvas></div>
+    <div class="panel"><h3>Orders by Status</h3><canvas id="statusChart" height="220"></canvas></div>
+  </div>
+  <div class="panel"><h3>Recent Orders</h3>${ordersTable(state.orders.slice(0,6), true)}</div>
+  `;
+}
+function statCard(lbl,val,warn=false){ return `<div class="stat ${warn?'warn':''}"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`; }
+
+function drawCharts(){
+  if(state.page!=='dashboard' || typeof Chart==='undefined') return;
+  const days=[]; const map={};
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const key=d.toLocaleDateString('en-IN',{weekday:'short'}); days.push(key); map[d.toDateString()]=0; }
+  state.orders.forEach(o=>{ if(o.createdAt?.toDate){ const key=o.createdAt.toDate().toDateString(); if(key in map) map[key]+=o.total||0; } });
+  const salesData = Object.values(map);
+  const c1 = document.getElementById('salesChart');
+  if(c1){ new Chart(c1, {type:'line', data:{labels:days, datasets:[{label:'Sales ()', data:salesData, borderColor:'#1f6b45', backgroundColor:'rgba(31,107,69,.12)', fill:true, tension:.35}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}}); }
+  const c2 = document.getElementById('statusChart');
+  if(c2){
+    const counts = STATUS_STEPS.concat('CANCELLED').map(s=>state.orders.filter(o=>o.orderStatus===s).length);
+    new Chart(c2, {type:'doughnut', data:{labels:STATUS_STEPS.concat('CANCELLED').map(s=>s.replace('_',' ')), datasets:[{data:counts, backgroundColor:['#f4c667','#7db8f0','#f2ab6f','#b39bf0','#7fd0f0','#7fd6a0','#e88a8a']}]}, options:{plugins:{legend:{position:'bottom', labels:{font:{size:10}}}}}});
+  }
+}
+
+/* ---------------- Products ---------------- */
+function renderProducts(){
+  let list = state.products;
+  if(state.productSearch.trim()) list = list.filter(p=>p.name.toLowerCase().includes(state.productSearch.toLowerCase()));
+  return `
+  <div class="pagehead"><div><h1>Products</h1><p>${state.products.length} total</p></div>
+    <button class="btn btn-primary" onclick="openModal('product')">+ Add Product</button></div>
+  <div class="toolbar"><input placeholder="Search products…" value="${esc(state.productSearch)}" oninput="state.productSearch=this.value;render()"></div>
+  <table class="datatable"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Discount</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+  <tbody>${list.map(p=>`
+    <tr>
+      <td style="display:flex;align-items:center;gap:10px;"><div class="imgthumb">${p.imageUrl?`<img src="${esc(p.imageUrl)}">`:catEmoji(p.category)}</div>${esc(p.name)} <span style="color:var(--muted);font-size:11px;">(${esc(p.unit||'')})</span></td>
+      <td>${esc(p.category||'—')}</td>
+      <td>${inr(p.price)}</td>
+      <td>${p.discount||0}%</td>
+      <td>${p.stock<=0?`<span class="chip out">Out</span>`:p.stock<10?`<span class="chip low">${p.stock} low</span>`:p.stock}</td>
+      <td><span class="chip ${p.active?'active-yes':'active-no'}">${p.active?'Available':'Unavailable'}</span></td>
+      <td class="rowactions">
+        <button class="btn btn-outline btn-sm" onclick='openModal("product", ${JSON.stringify(p).replace(/'/g,"&apos;")})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Delete</button>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="7"><div class="empty"><div class="ic"></div><h3>No products</h3><p>Add your first product to get started.</p></div></td></tr>`}
+  </tbody></table>`;
+}
+async function saveProduct(e){
+  e.preventDefault();
+  const f=e.target;
+  const data = {
+    name:f.name.value.trim(), description:f.description.value.trim(), category:f.category.value,
+    categoryId: state.categories.find(c=>c.name===f.category.value)?.id || '',
+    price:parseFloat(f.price.value)||0, discount:parseFloat(f.discount.value)||0,
+    unit:f.unit.value.trim(), stock:parseInt(f.stock.value)||0, active:f.active.checked,
+    featured:f.featured.checked, imageUrl:f.imageUrl.value.trim(),
+  };
+  try{
+    if(state.editing?.id){
+      await db.collection('products').doc(state.editing.id).update(data);
+      toast('Product updated');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); data.soldCount=0;
+      await db.collection('products').add(data);
+      toast('Product added');
+    }
+    closeModal(); await loadAll(); render();
+  }catch(err){ toast(err.message); }
+}
+async function deleteProduct(id){
+  if(!confirm('Delete this product? This cannot be undone.')) return;
+  try{ await db.collection('products').doc(id).delete(); toast('Product deleted'); await loadAll(); render(); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------------- Categories ---------------- */
+function renderCategories(){
+  return `
+  <div class="pagehead"><div><h1>Categories</h1><p>${state.categories.length} total</p></div>
+    <button class="btn btn-primary" onclick="openModal('category')">+ Add Category</button></div>
+  <table class="datatable"><thead><tr><th>Icon</th><th>Name</th><th>Status</th><th></th></tr></thead>
+  <tbody>${state.categories.map(c=>`
+    <tr>
+      <td><div class="imgthumb">${c.image?`<img src="${esc(c.image)}">`:catEmoji(c.name)}</div></td>
+      <td>${esc(c.name)}</td>
+      <td><span class="chip ${c.active?'active-yes':'active-no'}">${c.active?'Active':'Inactive'}</span></td>
+      <td class="rowactions">
+        <button class="btn btn-outline btn-sm" onclick='openModal("category", ${JSON.stringify(c).replace(/'/g,"&apos;")})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCategory('${c.id}')">Delete</button>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="4"><div class="empty"><div class="ic"></div><h3>No categories</h3></div></td></tr>`}
+  </tbody></table>`;
+}
+async function saveCategory(e){
+  e.preventDefault(); const f=e.target;
+  const data = { name:f.name.value.trim(), image:f.image.value.trim(), active:f.active.checked };
+  try{
+    if(state.editing?.id){ await db.collection('categories').doc(state.editing.id).update(data); toast('Category updated'); }
+    else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await db.collection('categories').add(data); toast('Category added'); }
+    closeModal(); await loadAll(); render();
+  }catch(err){ toast(err.message); }
+}
+async function deleteCategory(id){
+  if(!confirm('Delete this category?')) return;
+  try{ await db.collection('categories').doc(id).delete(); toast('Category deleted'); await loadAll(); render(); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------------- Inventory ---------------- */
+function renderInventory(){
+  const low = state.products.filter(p=>p.stock>0 && p.stock<10);
+  const out = state.products.filter(p=>(p.stock||0)<=0);
+  return `
+  <div class="pagehead"><div><h1>Inventory</h1><p>Stock health across your catalog</p></div></div>
+  <div class="cards">${statCard('Total Products', state.products.length)}${statCard('Low Stock (<10)', low.length, low.length>0)}${statCard('Out of Stock', out.length, out.length>0)}</div>
+  <div class="panel"><h3>Low Stock</h3>${stockTable(low,'Restock')}</div>
+  <div class="panel"><h3>Out of Stock</h3>${stockTable(out,'Restock')}</div>
+  `;
+}
+function stockTable(list, action){
+  if(!list.length) return `<div class="empty" style="padding:20px;"><p>Nothing here — all good.</p></div>`;
+  return `<table class="datatable"><thead><tr><th>Product</th><th>Category</th><th>Stock</th><th></th></tr></thead>
+  <tbody>${list.map(p=>`<tr>
+    <td style="display:flex;align-items:center;gap:10px;"><div class="imgthumb">${p.imageUrl?`<img src="${esc(p.imageUrl)}">`:catEmoji(p.category)}</div>${esc(p.name)}</td>
+    <td>${esc(p.category||'—')}</td><td>${p.stock}</td>
+    <td><button class="btn btn-outline btn-sm" onclick='openModal("product", ${JSON.stringify(p).replace(/'/g,"&apos;")})'>${action}</button></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+/* ---------------- Orders ---------------- */
+function renderOrders(){
+  let list = state.orders;
+  if(state.orderFilter!=='ALL') list = list.filter(o=>o.orderStatus===state.orderFilter);
+  if(state.orderSearch.trim()){ const q=state.orderSearch.toLowerCase(); list = list.filter(o=>o.id.toLowerCase().includes(q) || (o.customerName||'').toLowerCase().includes(q) || (o.customerPhone||'').includes(q)); }
+  return `
+  <div class="pagehead"><div><h1>Orders</h1><p>${state.orders.length} total orders</p></div></div>
+  <div class="toolbar">
+    <input placeholder="Search by order ID, name, phone…" value="${esc(state.orderSearch)}" oninput="state.orderSearch=this.value;render()">
+    <select onchange="state.orderFilter=this.value;render()">
+      <option value="ALL" ${state.orderFilter==='ALL'?'selected':''}>All statuses</option>
+      ${STATUS_STEPS.concat('CANCELLED').map(s=>`<option value="${s}" ${state.orderFilter===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+    </select>
+  </div>
+  ${ordersTable(list, false)}
+  `;
+}
+function ordersTable(list, compact){
+  if(!list.length) return `<div class="empty"><div class="ic"></div><h3>No orders</h3></div>`;
+  return `<table class="datatable"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th>${compact?'':'<th>Update</th>'}</tr></thead>
+  <tbody>${list.map(o=>{
+    const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<tr>
+      <td style="cursor:pointer;" onclick='openModal("orderDetail", ${JSON.stringify(o).replace(/'/g,"&apos;")})'><b style="color:var(--green-700);">#${o.id.slice(0,8)}</b><div style="color:var(--muted);font-size:11px;">${date}</div></td>
+      <td>${esc(o.customerName)}<div style="color:var(--muted);font-size:11px;">${esc(o.customerPhone)}</div></td>
+      <td><button class="btn btn-outline btn-sm" onclick='openModal("orderDetail", ${JSON.stringify(o).replace(/'/g,"&apos;")})'>${o.items.length} item${o.items.length>1?'s':''} — View</button></td>
+      <td>${inr(o.total)}</td>
+      <td><span class="chip ${o.paymentStatus}">${o.paymentStatus}</span><div style="font-size:10px;color:var(--muted);margin-top:2px;">${o.paymentMethod}</div></td>
+      <td><span class="chip ${o.orderStatus}">${o.orderStatus.replace('_',' ')}</span></td>
+      ${compact?'':`<td>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select onchange="updateOrderStatus('${o.id}', this.value)">
+            ${STATUS_STEPS.concat('CANCELLED').map(s=>`<option value="${s}" ${o.orderStatus===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+          </select>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}')">Delete</button>
+        </div>
+      </td>`}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+async function updateOrderStatus(orderId, newStatus){
+  try{
+    await db.collection('orders').doc(orderId).update({ orderStatus:newStatus });
+    toast('Order status updated');
+    await loadAll(); render();
+  }catch(e){ toast(e.message); }
+}
+async function deleteOrder(orderId){
+  if(!confirm('Delete this order permanently? This cannot be undone. (The customer\'s stock is not restored automatically.)')) return;
+  try{
+    await db.collection('orders').doc(orderId).delete();
+    const paySnap = await db.collection('payments').where('orderId','==',orderId).get();
+    const batch = db.batch();
+    paySnap.docs.forEach(d => batch.delete(d.ref));
+    if(!paySnap.empty) await batch.commit();
+    toast('Order deleted');
+    closeModal();
+    await loadAll(); render();
+  }catch(e){ toast('Could not delete order: ' + e.message); }
+}
+window.deleteOrder = deleteOrder;
+
+/* ---------------- Payments ---------------- */
+function renderPayments(){
+  return `
+  <div class="pagehead"><div><h1>Payments</h1><p>Payment history & store payment settings</p></div></div>
+  <div class="tabs">
+    <button class="tabbtn ${state.activeTab==='history'?'active':''}" onclick="state.activeTab='history';render()">Payment History</button>
+    <button class="tabbtn ${state.activeTab==='settings'?'active':''}" onclick="state.activeTab='settings';render()">Payment Settings</button>
+  </div>
+  ${state.activeTab==='history' ? renderPaymentHistory() : renderPaymentSettings()}
+  `;
+}
+function renderPaymentHistory(){
+  let list = state.payments;
+  if(state.paymentFilter!=='ALL') list = list.filter(p=>p.status===state.paymentFilter);
+  if(state.paymentSearch.trim()){ const q=state.paymentSearch.toLowerCase(); list=list.filter(p=>p.id.toLowerCase().includes(q)||(p.orderId||'').toLowerCase().includes(q)); }
+  return `
+  <div class="toolbar">
+    <input placeholder="Search by payment or order ID…" value="${esc(state.paymentSearch)}" oninput="state.paymentSearch=this.value;render()">
+    <select onchange="state.paymentFilter=this.value;render()">
+      <option value="ALL">All statuses</option>
+      <option value="PENDING" ${state.paymentFilter==='PENDING'?'selected':''}>Pending</option>
+      <option value="PAID" ${state.paymentFilter==='PAID'?'selected':''}>Paid</option>
+      <option value="FAILED" ${state.paymentFilter==='FAILED'?'selected':''}>Failed</option>
+      <option value="REFUNDED" ${state.paymentFilter==='REFUNDED'?'selected':''}>Refunded</option>
+    </select>
+  </div>
+  <table class="datatable"><thead><tr><th>Payment ID</th><th>Order</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Update</th></tr></thead>
+  <tbody>${list.map(p=>{
+    const date = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<tr>
+      <td>#${p.id.slice(0,8)}</td><td>#${(p.orderId||'').slice(0,8)}</td><td>${inr(p.amount)}</td><td>${p.method}</td>
+      <td><span class="chip ${p.status}">${p.status}</span></td><td>${date}</td>
+      <td><select onchange="updatePaymentStatus('${p.id}','${p.orderId}',this.value)">
+        ${['PENDING','PAID','FAILED','REFUNDED'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}
+      </select></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7"><div class="empty"><div class="ic"></div><h3>No payments</h3></div></td></tr>`}
+  </tbody></table>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;">
+    Manually confirm PAID only after verifying the transaction in your bank/UPI app or payment
+    provider dashboard. In production, wire this to server-side webhooks (Cloud Functions) instead
+    of manual marking.
+  </p>`;
+}
+async function updatePaymentStatus(paymentId, orderId, status){
+  try{
+    await db.collection('payments').doc(paymentId).update({status});
+    if(status==='PAID' && orderId) await db.collection('orders').doc(orderId).update({paymentStatus:'PAID'});
+    if(status==='FAILED' && orderId) await db.collection('orders').doc(orderId).update({paymentStatus:'FAILED'});
+    if(status==='REFUNDED' && orderId) await db.collection('orders').doc(orderId).update({paymentStatus:'REFUNDED'});
+    toast('Payment status updated');
+    await loadAll(); render();
+  }catch(e){ toast(e.message); }
+}
+function renderPaymentSettings(){
+  const ps = state.paymentSettings || {};
+  return `<div class="panel" style="max-width:520px;">
+    <form onsubmit="savePaymentSettings(event)">
+      <div class="field"><label>Merchant / store name</label><input name="merchantName" value="${esc(ps.merchantName||'')}" required></div>
+      <div class="field"><label>UPI ID</label><input name="upiId" value="${esc(ps.upiId||'')}" placeholder="store@upi" required></div>
+      <div class="field"><label>Payment QR code</label>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="qr-preview" id="qrPreview">${ps.qrCodeUrl?`<img src="${esc(ps.qrCodeUrl)}">`:'No QR code'}</div>
+          <input type="file" accept="image/*" onchange="handleImageFile(event,'qrData','qrPreview',500)">
+        </div>
+        <input type="hidden" name="qrCodeUrl" id="qrData" value="${esc(ps.qrCodeUrl||'')}">
+      </div>
+      <div class="checkrow"><input type="checkbox" name="onlinePaymentEnabled" ${ps.onlinePaymentEnabled?'checked':''}> Online payment enabled</div>
+      <div class="checkrow"><input type="checkbox" name="codEnabled" ${ps.codEnabled!==false?'checked':''}> Cash on Delivery enabled</div>
+      <button class="btn btn-primary" style="margin-top:12px;" type="submit">Save Settings</button>
+    </form>
+  </div>`;
+}
+async function savePaymentSettings(e){
+  e.preventDefault(); const f=e.target;
+  const data = {
+    merchantName:f.merchantName.value.trim(), upiId:f.upiId.value.trim(), qrCodeUrl:f.qrCodeUrl.value.trim(),
+    onlinePaymentEnabled:f.onlinePaymentEnabled.checked, codEnabled:f.codEnabled.checked,
+  };
+  try{ await db.collection('paymentSettings').doc('default').set(data,{merge:true}); toast('Payment settings saved'); await loadAll(); render(); }
+  catch(err){ toast(err.message); }
+}
+
+/* ---------------- Store Settings (logo & banner) ---------------- */
+function renderStoreSettings(){
+  const ss = state.storeSettings || {};
+  return `
+  <div class="pagehead"><div><h1>Store Settings</h1><p>Store name, logo, and the customer app's home banner</p></div></div>
+  <div class="panel" style="max-width:520px;">
+    <form onsubmit="saveStoreSettings(event)">
+      <div class="field"><label>Store name</label><input name="storeName" value="${esc(ss.storeName||'FreshCart')}" required></div>
+
+      <div class="field"><label>Store logo</label>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="qr-preview" id="logoPreview">${ss.logoUrl?`<img src="${esc(ss.logoUrl)}">`:'No logo'}</div>
+          <input type="file" accept="image/*" onchange="handleImageFile(event,'logoData','logoPreview',300)">
+        </div>
+        <input type="hidden" name="logoUrl" id="logoData" value="${esc(ss.logoUrl||'')}">
+      </div>
+
+      <div class="field"><label>Home screen promo banner</label>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="qr-preview" style="width:140px;height:80px;" id="bannerPreview">${ss.bannerUrl?`<img src="${esc(ss.bannerUrl)}">`:'No banner'}</div>
+          <input type="file" accept="image/*" onchange="handleImageFile(event,'bannerData','bannerPreview',900)">
+        </div>
+        <input type="hidden" name="bannerUrl" id="bannerData" value="${esc(ss.bannerUrl||'')}">
+        <p style="font-size:11px;color:var(--muted);margin-top:6px;">Leave empty to show the default "Today's Offer" banner instead.</p>
+        ${ss.bannerUrl?`<button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('bannerData').value='';document.getElementById('bannerPreview').innerHTML='No banner';">Remove banner</button>`:''}
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:8px;" type="submit">Save Store Settings</button>
+    </form>
+  </div>`;
+}
+async function saveStoreSettings(e){
+  e.preventDefault(); const f=e.target;
+  const data = { storeName:f.storeName.value.trim(), logoUrl:f.logoUrl.value, bannerUrl:f.bannerUrl.value };
+  try{ await db.collection('storeSettings').doc('default').set(data,{merge:true}); toast('Store settings saved'); await loadAll(); render(); }
+  catch(err){ toast(err.message); }
+}
+window.saveStoreSettings = saveStoreSettings;
+
+/* ---------------- Account Settings (admin username/password) ---------------- */
+function renderAccountSettings(){
+  return `
+  <div class="pagehead"><div><h1>Account Settings</h1><p>Change the username and password used to sign in to this admin panel</p></div></div>
+  <div class="panel" style="max-width:460px;">
+    <h3 style="font-size:13px;">Sign-in diagnostics</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 4px;">
+      Internal account UID: <code style="background:var(--cream);padding:2px 6px;border-radius:6px;">${esc(state.user?.uid || '—')}</code><br>
+      Admin role detected: <b style="color:${state.isAdmin?'var(--green-700)':'var(--tomato)'};">${state.isAdmin ? 'Yes' : 'No'}</b>
+    </p>
+    <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 18px;">
+      If "Load Demo Data" or any Save button gives a permissions error, go to
+      Firestore  <code>users</code> collection and confirm there's a
+      document whose <b>Document ID</b> exactly matches the UID above, with
+      a field <code>role</code> (string) set to exactly <code>admin</code>
+      — then make sure the latest <code>firestore.rules</code> has been
+      published (Firestore  Rules  Publish).
+    </p>
+  </div>
+  <div class="panel" style="max-width:460px;">
+    <form onsubmit="saveAdminCredentials(event)">
+      <div class="field"><label>Current password</label><input type="password" name="currentPassword" required autocomplete="current-password"></div>
+      <div class="field"><label>New username</label><input name="newUsername" required placeholder="adminoffreshcart" autocomplete="username"></div>
+      <div class="field"><label>New password</label><input type="password" name="newPassword" required minlength="6" autocomplete="new-password"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" name="confirmPassword" required minlength="6" autocomplete="new-password"></div>
+      <button class="btn btn-primary" style="margin-top:8px;" type="submit">Update Login Details</button>
+    </form>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6;">
+      This changes the username and password you type on the Admin Sign In
+      screen. Pick a password you don't reuse anywhere else — see README.md
+      for a note on this login method's limitations.
+    </p>
+  </div>`;
+}
+window.renderAccountSettings = renderAccountSettings;
+
+/* ---------------- Demo Data (in-browser, no Node/scripts needed) ---------------- */
+const DEMO_CATEGORIES = ['Vegetables','Fruits','Dairy','Bakery','Snacks','Beverages','Rice & Grains','Pulses','Spices','Household','Personal Care','Instant Food'];
+const DEMO_PRODUCTS = [
+  ['Fresh Tomato','Vegetables','1 kg',40,10],['Onion','Vegetables','1 kg',35,0],['Potato','Vegetables','1 kg',30,0],
+  ['Green Capsicum','Vegetables','500 g',45,5],['Carrot','Vegetables','500 g',28,0],['Spinach Bunch','Vegetables','1 bunch',20,0],
+  ['Cucumber','Vegetables','500 g',22,0],['Banana','Fruits','1 dozen',55,0],['Apple (Shimla)','Fruits','1 kg',180,15],
+  ['Mango (Alphonso)','Fruits','1 kg',350,10],['Orange','Fruits','1 kg',90,0],['Pomegranate','Fruits','1 kg',140,0],
+  ['Grapes (Green)','Fruits','500 g',70,0],['Toned Milk','Dairy','1 litre',58,0],['Paneer','Dairy','200 g',90,0],
+  ['Curd','Dairy','400 g',45,0],['Butter','Dairy','100 g',55,0],['Cheese Slices','Dairy','200 g',120,10],
+  ['Brown Bread','Bakery','400 g',48,0],['White Bread','Bakery','400 g',42,0],['Butter Croissant','Bakery','2 pc',80,0],
+  ['Potato Chips','Snacks','150 g',40,5],['Salted Namkeen Mix','Snacks','200 g',60,0],['Digestive Biscuits','Snacks','250 g',45,0],
+  ['Orange Juice','Beverages','1 litre',110,0],['Green Tea (25 bags)','Beverages','1 pack',150,0],['Instant Coffee','Beverages','100 g',210,10],
+  ['Basmati Rice','Rice & Grains','5 kg',480,0],['Whole Wheat Atta','Rice & Grains','5 kg',260,0],['Poha','Rice & Grains','500 g',45,0],
+  ['Toor Dal','Pulses','1 kg',150,0],['Moong Dal','Pulses','1 kg',140,0],['Chana Dal','Pulses','1 kg',110,0],
+  ['Turmeric Powder','Spices','200 g',55,0],['Red Chilli Powder','Spices','200 g',65,0],['Garam Masala','Spices','100 g',85,0],
+  ['Dishwash Liquid','Household','500 ml',95,0],['Laundry Detergent','Household','1 kg',180,10],['Toilet Cleaner','Household','500 ml',85,0],
+  ['Toothpaste','Personal Care','150 g',95,0],['Shampoo','Personal Care','340 ml',210,15],['Hand Wash','Personal Care','250 ml',75,0],
+  ['Instant Noodles (4-pack)','Instant Food','280 g',56,0],['Ready-to-eat Poha','Instant Food','300 g',90,0],
+];
+const DEMO_COUPONS = [
+  { code:'WELCOME50', type:'fixed', value:50, minimumOrder:299, startDate:'2026-01-01', endDate:'2026-12-31', active:true },
+  { code:'SAVE10', type:'percentage', value:10, minimumOrder:499, startDate:'2026-01-01', endDate:'2026-12-31', active:true },
+  { code:'FRESH20', type:'percentage', value:20, minimumOrder:799, startDate:'2026-01-01', endDate:'2026-12-31', active:true },
+];
+
+function renderDemoData(){
+  return `
+  <div class="pagehead"><div><h1>Demo Data</h1><p>Load sample products so you have something to look at right away</p></div></div>
+  <div class="panel" style="max-width:520px;">
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 14px;">
+      Adds ${DEMO_CATEGORIES.length} categories, ${DEMO_PRODUCTS.length} products with realistic INR
+      pricing, and ${DEMO_COUPONS.length} sample coupons straight to your Firestore database — from
+      right here, no computer/Node.js/scripts required.
+    </p>
+    <button id="seedBtn" class="btn btn-primary" onclick="loadDemoData()">Load Demo Data</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;">
+      Safe to tap once. Running it again will ask first if you already have products, since it adds
+      new items rather than replacing what's there.
+    </p>
+  </div>`;
+}
+
+async function loadDemoData(){
+  if(state.products.length > 0 || state.categories.length > 0){
+    if(!confirm('You already have products or categories. Load demo data anyway? (This adds new items, it will not remove or replace what you already have.)')) return;
+  }
+  const btn = document.getElementById('seedBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading…'; }
+  try{
+    const batch = db.batch();
+    const catIds = {};
+    DEMO_CATEGORIES.forEach(name=>{
+      const ref = db.collection('categories').doc();
+      catIds[name] = ref.id;
+      batch.set(ref, { name, image:'', active:true, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    });
+    DEMO_PRODUCTS.forEach(([name, category, unit, price, discount])=>{
+      const ref = db.collection('products').doc();
+      batch.set(ref, {
+        name, category, categoryId: catIds[category], unit, price, discount,
+        description: `Fresh, quality-checked ${name.toLowerCase()}, sourced daily for FreshCart customers.`,
+        stock: Math.floor(Math.random()*40) + 5,
+        active: true, featured: Math.random() < 0.25, soldCount: Math.floor(Math.random()*100),
+        imageUrl: '', createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    DEMO_COUPONS.forEach(c=>{ batch.set(db.collection('coupons').doc(), c); });
+    await batch.commit();
+    toast(`Loaded ${DEMO_CATEGORIES.length} categories, ${DEMO_PRODUCTS.length} products, ${DEMO_COUPONS.length} coupons`);
+    await loadAll();
+    render();
+  }catch(err){
+    toast('Could not load demo data: ' + err.message);
+    if(btn){ btn.disabled = false; btn.textContent = 'Load Demo Data'; }
+  }
+}
+window.loadDemoData = loadDemoData;
+
+/* ---------------- Customers ---------------- */
+function renderCustomers(){
+  const withStats = state.customers.map(c=>{
+    const custOrders = state.orders.filter(o=>o.userId===c.id);
+    return {...c, orderCount:custOrders.length, spent:custOrders.reduce((s,o)=>s+(o.total||0),0)};
+  });
+  return `
+  <div class="pagehead"><div><h1>Customers</h1><p>${state.customers.length} registered</p></div></div>
+  <table class="datatable"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Orders</th><th>Total Spent</th></tr></thead>
+  <tbody>${withStats.map(c=>`<tr>
+    <td>${esc(c.name)}</td><td>${esc(c.phone||'—')}</td><td>${esc(c.email)}</td><td>${c.orderCount}</td><td>${inr(c.spent)}</td>
+  </tr>`).join('') || `<tr><td colspan="5"><div class="empty"><div class="ic"></div><h3>No customers yet</h3></div></td></tr>`}
+  </tbody></table>`;
+}
+
+/* ---------------- Offers & Coupons ---------------- */
+function renderOffers(){
+  return `
+  <div class="pagehead"><div><h1>Offers & Coupons</h1><p>${state.coupons.length} total</p></div>
+    <button class="btn btn-primary" onclick="openModal('coupon')">+ Add Coupon</button></div>
+  <table class="datatable"><thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min. Order</th><th>Valid</th><th>Status</th><th></th></tr></thead>
+  <tbody>${state.coupons.map(c=>`<tr>
+    <td><b>${esc(c.code)}</b></td><td>${c.type==='percentage'?'Percentage':'Fixed'}</td>
+    <td>${c.type==='percentage'?c.value+'%':inr(c.value)}</td><td>${inr(c.minimumOrder||0)}</td>
+    <td>${c.startDate||'—'}  ${c.endDate||'—'}</td>
+    <td><span class="chip ${c.active?'active-yes':'active-no'}">${c.active?'Active':'Inactive'}</span></td>
+    <td class="rowactions">
+      <button class="btn btn-outline btn-sm" onclick='openModal("coupon", ${JSON.stringify(c).replace(/'/g,"&apos;")})'>Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCoupon('${c.id}')">Delete</button>
+    </td>
+  </tr>`).join('') || `<tr><td colspan="7"><div class="empty"><div class="ic"></div><h3>No coupons yet</h3></div></td></tr>`}
+  </tbody></table>`;
+}
+async function saveCoupon(e){
+  e.preventDefault(); const f=e.target;
+  const data = {
+    code:f.code.value.trim().toUpperCase(), type:f.type.value, value:parseFloat(f.value.value)||0,
+    minimumOrder:parseFloat(f.minimumOrder.value)||0, startDate:f.startDate.value, endDate:f.endDate.value, active:f.active.checked,
+  };
+  try{
+    if(state.editing?.id){ await db.collection('coupons').doc(state.editing.id).update(data); toast('Coupon updated'); }
+    else { await db.collection('coupons').add(data); toast('Coupon created'); }
+    closeModal(); await loadAll(); render();
+  }catch(err){ toast(err.message); }
+}
+async function deleteCoupon(id){
+  if(!confirm('Delete this coupon?')) return;
+  try{ await db.collection('coupons').doc(id).delete(); toast('Coupon deleted'); await loadAll(); render(); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------------- Modals ---------------- */
+function renderModal(){
+  if(!state.modal) return '';
+  if(state.modal==='product') return productModal();
+  if(state.modal==='category') return categoryModal();
+  if(state.modal==='coupon') return couponModal();
+  if(state.modal==='orderDetail') return orderDetailModal();
+  return '';
+}
+function orderDetailModal(){
+  const o = state.editing;
+  if(!o) return '';
+  const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  return `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal-card" style="max-width:560px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+      <div><h3 style="margin:0;">Order #${o.id.slice(0,8)}</h3><p style="margin:2px 0 0;font-size:12px;color:var(--muted);">${date}</p></div>
+      <span class="chip ${o.orderStatus}">${o.orderStatus.replace('_',' ')}</span>
+    </div>
+
+    <h3 style="font-size:13px;margin:18px 0 8px;">Items Ordered</h3>
+    <table class="datatable" style="border-radius:10px;">
+      <thead><tr><th>Product</th><th>Unit</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+      <tbody>${o.items.map(it=>`<tr>
+        <td>${esc(it.name)}</td>
+        <td style="color:var(--muted);">${esc(it.unit||'')}</td>
+        <td>${it.qty}</td>
+        <td>${inr(it.finalPrice)}${it.discount>0?`<div style="font-size:10px;color:var(--muted);text-decoration:line-through;">${inr(it.price)}</div>`:''}</td>
+        <td><b>${inr(it.finalPrice*it.qty)}</b></td>
+      </tr>`).join('')}</tbody>
+    </table>
+
+    <div style="margin-top:14px;">
+      <div class="sumrow-like" style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:4px 0;"><span>Subtotal</span><span>${inr(o.subtotal)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:4px 0;"><span>Discount${o.couponCode?` (${esc(o.couponCode)})`:''}</span><span> ${inr(o.discount)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:4px 0;"><span>Delivery</span><span>${o.deliveryCharge===0?'FREE':inr(o.deliveryCharge)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding:8px 0 0;border-top:1px dashed var(--line);margin-top:4px;"><span>Total</span><span>${inr(o.total)}</span></div>
+    </div>
+
+    <h3 style="font-size:13px;margin:18px 0 8px;">Customer & Delivery Address</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0;">
+      ${esc(o.customerName)} · ${esc(o.customerPhone)}<br>
+      ${esc(o.address?.line || '')}${o.address?.landmark ? ', near ' + esc(o.address.landmark) : ''}<br>
+      Pincode: ${esc(o.address?.pincode || '')}
+    </p>
+
+    <h3 style="font-size:13px;margin:18px 0 8px;">Payment</h3>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span class="chip ${o.paymentStatus}">${o.paymentStatus}</span>
+      <span style="font-size:12px;color:var(--muted);">${esc(o.paymentMethod)}</span>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-danger" onclick="deleteOrder('${o.id}')">Delete Order</button>
+      <button type="button" class="btn btn-outline" onclick="closeModal()">Close</button>
+      <select onchange="updateOrderStatus('${o.id}', this.value); closeModal();">
+        <option value="" disabled selected>Update status…</option>
+        ${STATUS_STEPS.concat('CANCELLED').map(s=>`<option value="${s}" ${o.orderStatus===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}
+      </select>
+    </div>
+  </div></div>`;
+}
+function productModal(){
+  const p = state.editing || {};
+  return `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal-card">
+    <h3>${p.id?'Edit Product':'Add Product'}</h3>
+    <form onsubmit="saveProduct(event)">
+      <div class="field"><label>Product name</label><input name="name" required value="${esc(p.name||'')}"></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="2">${esc(p.description||'')}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Category</label><select name="category" required>${state.categories.map(c=>`<option ${p.category===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+        <div class="field"><label>Unit</label><input name="unit" placeholder="1 kg / 500 g / 1 pc" required value="${esc(p.unit||'')}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Price ()</label><input type="number" step="0.01" name="price" required value="${p.price??''}"></div>
+        <div class="field"><label>Discount (%)</label><input type="number" step="1" name="discount" value="${p.discount??0}"></div>
+      </div>
+      <div class="field"><label>Stock</label><input type="number" name="stock" required value="${p.stock??0}"></div>
+      <div class="field"><label>Product image</label>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="imgthumb" style="width:56px;height:56px;" id="productImagePreview">${p.imageUrl?`<img src="${esc(p.imageUrl)}">`:catEmoji(p.category)}</div>
+          <input type="file" accept="image/*" onchange="handleImageFile(event,'productImageData','productImagePreview',500)">
+        </div>
+        <input type="hidden" name="imageUrl" id="productImageData" value="${esc(p.imageUrl||'')}">
+      </div>
+      <div class="checkrow"><input type="checkbox" name="active" ${p.active!==false?'checked':''}> Available for sale</div>
+      <div class="checkrow"><input type="checkbox" name="featured" ${p.featured?'checked':''}> Featured on home screen</div>
+      <div class="modal-actions"><button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" type="submit">Save Product</button></div>
+    </form>
+  </div></div>`;
+}
+function categoryModal(){
+  const c = state.editing || {};
+  return `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal-card">
+    <h3>${c.id?'Edit Category':'Add Category'}</h3>
+    <form onsubmit="saveCategory(event)">
+      <div class="field"><label>Name</label><input name="name" required value="${esc(c.name||'')}"></div>
+      <div class="field"><label>Icon/Image (optional)</label>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="imgthumb" style="width:56px;height:56px;" id="categoryImagePreview">${c.image?`<img src="${esc(c.image)}">`:catEmoji(c.name)}</div>
+          <input type="file" accept="image/*" onchange="handleImageFile(event,'categoryImageData','categoryImagePreview',300)">
+        </div>
+        <input type="hidden" name="image" id="categoryImageData" value="${esc(c.image||'')}">
+      </div>
+      <div class="checkrow"><input type="checkbox" name="active" ${c.active!==false?'checked':''}> Active</div>
+      <div class="modal-actions"><button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" type="submit">Save Category</button></div>
+    </form>
+  </div></div>`;
+}
+function couponModal(){
+  const c = state.editing || {};
+  return `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal-card">
+    <h3>${c.id?'Edit Coupon':'Add Coupon'}</h3>
+    <form onsubmit="saveCoupon(event)">
+      <div class="field"><label>Coupon code</label><input name="code" required value="${esc(c.code||'')}" style="text-transform:uppercase;"></div>
+      <div class="field-row">
+        <div class="field"><label>Type</label><select name="type"><option value="percentage" ${c.type==='percentage'?'selected':''}>Percentage</option><option value="fixed" ${c.type==='fixed'?'selected':''}>Fixed amount</option></select></div>
+        <div class="field"><label>Value</label><input type="number" name="value" required value="${c.value??''}"></div>
+      </div>
+      <div class="field"><label>Minimum order value ()</label><input type="number" name="minimumOrder" value="${c.minimumOrder??0}"></div>
+      <div class="field-row">
+        <div class="field"><label>Start date</label><input type="date" name="startDate" value="${c.startDate||''}"></div>
+        <div class="field"><label>End date</label><input type="date" name="endDate" value="${c.endDate||''}"></div>
+      </div>
+      <div class="checkrow"><input type="checkbox" name="active" ${c.active!==false?'checked':''}> Active</div>
+      <div class="modal-actions"><button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" type="submit">Save Coupon</button></div>
+    </form>
+  </div></div>`;
+}
+
+function attachAfterRender(){ setTimeout(drawCharts, 0); }
+
+/* Expose */
+window.go=go; window.openModal=openModal; window.closeModal=closeModal;
+window.handleAdminLogin=handleAdminLogin; window.handleAdminLogout=handleAdminLogout;
+window.saveProduct=saveProduct; window.deleteProduct=deleteProduct;
+window.saveCategory=saveCategory; window.deleteCategory=deleteCategory;
+window.saveCoupon=saveCoupon; window.deleteCoupon=deleteCoupon;
+window.updateOrderStatus=updateOrderStatus; window.updatePaymentStatus=updatePaymentStatus;
+window.savePaymentSettings=savePaymentSettings;
+
+render();
+initAuth();
+// Auto-refresh orders/payments/etc every 30s while the panel is open,
+// so new customer orders show up without a manual reload.
+setInterval(()=>{ if(state.screen==='app') loadAll().then(render); }, 30000);
+</script>
+</body>
+</html>

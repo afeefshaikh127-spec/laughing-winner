@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>FreshCart — Grocery Delivered</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK, no build step required) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root{
+  --ink:#16231c;
+  --green-900:#123524;
+  --green-700:#1f6b45;
+  --green-600:#2c8a58;
+  --green-500:#37a06a;
+  --cream:#faf7ef;
+  --paper:#ffffff;
+  --line:#e7e2d4;
+  --mango:#e2932a;
+  --tomato:#c9532f;
+  --muted:#7a7f74;
+  --radius:16px;
+  --shadow:0 8px 24px -12px rgba(18,53,36,0.25);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--green-900);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{font-family:'Sora',system-ui,sans-serif;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;text-decoration:none;}
+::-webkit-scrollbar{width:0;height:0;}
+
+/* App shell — phone-frame on desktop, full width on mobile */
+#appShell{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--cream);
+  position:relative;
+  overflow-x:hidden;
+  box-shadow:0 0 60px rgba(0,0,0,0.35);
+}
+@media(min-width:481px){
+  body{padding:24px 0;}
+  #appShell{min-height:calc(100vh - 48px); border-radius:28px; overflow:hidden;}
+}
+
+.screen{padding:0 0 90px 0; animation:fadeIn .22s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.screen.no-nav{padding-bottom:24px;}
+
+.topbar{
+  background:linear-gradient(160deg,var(--green-700),var(--green-900));
+  color:#fff;
+  padding:20px 18px 26px;
+  border-radius:0 0 26px 26px;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .logo{
+  width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.14);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.brand-name{font-family:'Sora';font-weight:800;font-size:19px;letter-spacing:.2px;}
+.brand-tag{font-size:11px;color:rgba(255,255,255,0.72);margin-top:-2px;}
+
+.searchbar{
+  margin-top:16px;background:#fff;border-radius:14px;padding:12px 14px;
+  display:flex;align-items:center;gap:10px;color:var(--muted);box-shadow:var(--shadow);
+}
+.searchbar input{border:none;outline:none;flex:1;font-size:14px;background:transparent;color:var(--ink);}
+
+.section{padding:18px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.section-head h2{font-size:16px;margin:0;font-weight:700;}
+.section-head .link{font-size:12px;color:var(--green-700);font-weight:600;}
+
+.cat-row{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;}
+.cat-pill{
+  flex:0 0 auto;width:72px;text-align:center;
+}
+.cat-pill .ic{
+  width:60px;height:60px;border-radius:18px;background:#fff;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:6px;
+  transition:transform .15s, box-shadow .15s;
+}
+.cat-pill.active .ic{background:var(--green-600);border-color:var(--green-600);transform:translateY(-2px);box-shadow:var(--shadow);}
+.cat-pill span{font-size:11px;font-weight:600;color:var(--ink);}
+
+.banner{
+  border-radius:18px;padding:18px;color:#fff;background:linear-gradient(135deg,var(--mango),#c9761c);
+  display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow);
+}
+.banner h3{margin:0 0 4px;font-size:16px;}
+.banner p{margin:0;font-size:12px;opacity:.9;}
+.banner .pct{font-size:26px;font-weight:800;font-family:'Sora';}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pcard{
+  background:#fff;border-radius:16px;padding:10px;border:1px solid var(--line);position:relative;
+}
+.pcard .img{
+  height:96px;border-radius:12px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden;position:relative;
+}
+.pcard .img img{width:100%;height:100%;object-fit:cover;}
+.badge{position:absolute;top:8px;left:8px;background:var(--tomato);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:8px;}
+.wish{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:13px;border:none;}
+.pcard .name{font-size:13px;font-weight:600;margin:8px 0 0;line-height:1.25;min-height:33px;}
+.pcard .unit{font-size:11px;color:var(--muted);margin:2px 0 8px;}
+.pcard .row{display:flex;align-items:center;justify-content:space-between;}
+.price{font-weight:800;font-size:14px;}
+.price .strike{font-weight:500;font-size:11px;color:var(--muted);text-decoration:line-through;margin-left:5px;}
+.addbtn{
+  background:var(--green-700);color:#fff;border:none;border-radius:10px;width:30px;height:30px;font-size:16px;font-weight:700;
+}
+.qtybox{display:flex;align-items:center;background:var(--green-700);border-radius:10px;overflow:hidden;}
+.qtybox button{background:none;border:none;color:#fff;width:26px;height:30px;font-weight:700;}
+.qtybox span{color:#fff;font-size:12px;font-weight:700;width:20px;text-align:center;}
+.oos{opacity:.55;}
+.oos-tag{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.6);border-radius:12px;font-size:11px;font-weight:700;color:var(--tomato);}
+
+.bottomnav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
+  background:#fff;border-top:1px solid var(--line);display:flex;padding:10px 6px 14px;z-index:40;
+}
+.navitem{flex:1;text-align:center;font-size:10px;color:var(--muted);font-weight:600;position:relative;}
+.navitem .ic{font-size:19px;display:block;margin-bottom:2px;}
+.navitem.active{color:var(--green-700);}
+.navdot{position:absolute;top:-6px;right:28%;background:var(--tomato);color:#fff;border-radius:8px;font-size:9px;padding:1px 4px;font-weight:700;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;border-radius:12px;border:none;font-weight:700;font-size:14px;width:100%;}
+.btn-primary{background:var(--green-700);color:#fff;}
+.btn-primary:disabled{background:#a9c3b3;}
+.btn-outline{background:#fff;border:1.5px solid var(--green-700);color:var(--green-700);}
+.btn-ghost{background:transparent;color:var(--green-700);font-weight:600;}
+.btn-danger{background:var(--tomato);color:#fff;}
+
+.field{margin-bottom:14px;}
+.field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px 13px;border-radius:11px;border:1.5px solid var(--line);font-size:14px;background:#fff;outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green-600);}
+.err{color:var(--tomato);font-size:12px;margin-top:5px;}
+
+.auth-wrap{padding:40px 26px;min-height:100vh;background:linear-gradient(180deg,var(--green-900),var(--green-700) 60%,var(--cream) 60%);}
+.auth-logo{text-align:center;color:#fff;margin-bottom:30px;}
+.auth-logo .ic{font-size:44px;}
+.auth-card{background:#fff;border-radius:20px;padding:24px;box-shadow:var(--shadow);}
+.auth-card h2{margin:0 0 4px;font-size:20px;}
+.auth-card p.sub{margin:0 0 20px;color:var(--muted);font-size:13px;}
+.switch{text-align:center;font-size:13px;color:var(--muted);margin-top:6px;}
+.switch b{color:var(--green-700);}
+
+.splash{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,var(--green-700),var(--green-900));color:#fff;}
+.splash .ic{font-size:60px;animation:pop .5s ease;}
+@keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+.splash h1{font-size:24px;margin:14px 0 4px;}
+.splash p{color:rgba(255,255,255,0.7);font-size:12px;}
+
+.pageheader{display:flex;align-items:center;gap:12px;padding:16px 18px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;}
+.iconbtn{width:34px;height:34px;border-radius:10px;background:var(--cream);border:none;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.pageheader h2{margin:0;font-size:16px;}
+
+.cartrow{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);align-items:center;}
+.cartrow .img{width:60px;height:60px;border-radius:12px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 auto;overflow:hidden;}
+.cartrow .img img{width:100%;height:100%;object-fit:cover;}
+.cartrow .info{flex:1;min-width:0;}
+.cartrow .info .n{font-size:13px;font-weight:600;}
+.cartrow .info .u{font-size:11px;color:var(--muted);}
+.cartrow .right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.rm{background:none;border:none;color:var(--tomato);font-size:11px;font-weight:600;}
+
+.summary{background:#fff;border-radius:16px;margin:14px 18px;padding:16px;border:1px solid var(--line);}
+.sumrow{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:5px 0;}
+.sumrow.total{color:var(--ink);font-weight:800;font-size:15px;border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;}
+.stickybar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;padding:14px 18px 20px;border-top:1px solid var(--line);z-index:40;}
+
+.chip{display:inline-block;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+.chip.PLACED{background:#fff3d6;color:#946200;}
+.chip.CONFIRMED{background:#dbeeff;color:#1c5fa6;}
+.chip.PREPARING{background:#fde3c7;color:#a35a0b;}
+.chip.READY{background:#e4dbff;color:#5b34c9;}
+.chip.OUT_FOR_DELIVERY{background:#d6f0ff;color:#0b6ea3;}
+.chip.DELIVERED{background:#dcf5e4;color:#1a7d43;}
+.chip.CANCELLED{background:#fbdcdc;color:#a12525;}
+.chip.PAID{background:#dcf5e4;color:#1a7d43;}
+.chip.PENDING{background:#fff3d6;color:#946200;}
+.chip.FAILED{background:#fbdcdc;color:#a12525;}
+.chip.REFUNDED{background:#e4e4e4;color:#555;}
+
+.ordercard{background:#fff;margin:12px 18px;border-radius:16px;padding:14px;border:1px solid var(--line);}
+.ordercard .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.ordercard .oid{font-size:11px;color:var(--muted);}
+.ordercard .amt{font-weight:800;font-size:15px;margin-top:2px;}
+.tracker{display:flex;margin:14px 0 4px;}
+.tstep{flex:1;text-align:center;position:relative;}
+.tstep .dot{width:22px;height:22px;border-radius:50%;background:var(--line);margin:0 auto 5px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;}
+.tstep.done .dot{background:var(--green-600);}
+.tstep .lbl{font-size:9px;color:var(--muted);font-weight:600;}
+.tstep.done .lbl{color:var(--green-700);}
+.tstep:not(:last-child)::after{content:'';position:absolute;top:11px;left:60%;width:80%;height:2px;background:var(--line);}
+.tstep.done:not(:last-child)::after{background:var(--green-600);}
+
+.empty{padding:60px 30px;text-align:center;color:var(--muted);}
+.empty .ic{font-size:44px;margin-bottom:12px;}
+.empty h3{color:var(--ink);margin:0 0 6px;}
+.empty p{font-size:13px;margin:0 0 18px;}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:30px;font-size:13px;z-index:100;box-shadow:var(--shadow);max-width:90%;text-align:center;animation:toastIn .2s ease;}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,20,15,0.55);z-index:60;display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:481px){.modal-backdrop{align-items:center;}}
+.modal-sheet{
+  background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;max-height:88vh;overflow-y:auto;animation:slideUp .25s ease;
+}
+@media(min-width:481px){.modal-sheet{border-radius:22px;max-height:80vh;}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);color:#fff;border:none;width:30px;height:30px;border-radius:50%;font-size:15px;}
+
+.pdetail-hero{height:220px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:70px;position:relative;overflow:hidden;}
+.pdetail-hero img{width:100%;height:100%;object-fit:cover;}
+.tab-row{display:flex;gap:8px;padding:14px 18px;overflow-x:auto;}
+.tab{padding:8px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:600;flex:0 0 auto;color:var(--muted);}
+.tab.active{background:var(--green-700);color:#fff;border-color:var(--green-700);}
+
+.skeleton{background:linear-gradient(90deg,#eee,#f6f6f6,#eee);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:12px;}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+.profile-row{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line);background:#fff;}
+.profile-row .l{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;}
+.profile-row .l .ic{font-size:18px;}
+.avatar{width:56px;height:56px;border-radius:50%;background:var(--green-600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Sora';}
+
+.qty-controls-lg{display:flex;align-items:center;gap:14px;}
+.qty-controls-lg button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:18px;font-weight:700;}
+.qty-controls-lg span{font-size:16px;font-weight:700;min-width:20px;text-align:center;}
+
+.payopt{border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.payopt.selected{border-color:var(--green-600);background:#f2f9f4;}
+.payopt input{width:18px;height:18px;}
+.qr-box{text-align:center;background:var(--cream);border-radius:16px;padding:20px;margin:14px 0;}
+.qr-box img{width:170px;height:170px;border-radius:12px;background:#fff;padding:8px;}
+
+.coupon-card{border:1.5px dashed var(--green-600);border-radius:14px;padding:12px 14px;background:#f2f9f4;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div id="appShell"><div id="app"></div></div>
+
+<script>
+/* =========================================================
+   FIREBASE CONFIG
+   Replace with your project's config. Never commit real keys
+   to a public repo — use environment injection at deploy time
+   for production. This demo reads from window.__FIREBASE_CONFIG__
+   if present, else falls back to the placeholder below.
+========================================================= */
+const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+  apiKey: "AIzaSyBp8_imLgD5QSHpvBTdMB71LW_T4zK62_E",
+  authDomain: "freshcart-c68d3.firebaseapp.com",
+  projectId: "freshcart-c68d3",
+  storageBucket: "freshcart-c68d3.firebasestorage.app",
+  messagingSenderId: "75372139912",
+  appId: "1:75372139912:web:1da4e482f12a00eddbd63d"
+};
+
+let fbReady = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  fbReady = firebaseConfig.apiKey !== "YOUR_API_KEY";
+} catch(e) { console.error("Firebase init failed", e); }
+
+const auth = fbReady ? firebase.auth() : null;
+const db = fbReady ? firebase.firestore() : null;
+// No Firebase Storage: product/category images, the store logo, the
+// payment QR code, and promo banners are all stored as compressed
+// base64 data-URL strings directly in Firestore (see admin.html).
+
+const DELIVERY_CHARGE = 40;
+const FREE_DELIVERY_ABOVE = 499;
+
+const CATEGORY_EMOJI = {
+  "Vegetables":"","Fruits":"","Dairy":"","Bakery":"","Snacks":"",
+  "Beverages":"","Rice & Grains":"","Pulses":"","Spices":"",
+  "Household":"","Personal Care":"","Instant Food":""
+};
+function catEmoji(name){ return CATEGORY_EMOJI[name] || ""; }
+
+/* ---------------- State ---------------- */
+let state = {
+  screen: 'splash',
+  authMode: 'login',
+  user: null,
+  profile: null,
+  categories: [],
+  products: [],
+  coupons: [],
+  offers: [],
+  paymentSettings: null,
+  storeSettings: null,
+  orders: [],
+  cart: JSON.parse(localStorage.getItem('fc_cart') || '[]'),
+  wishlist: JSON.parse(localStorage.getItem('fc_wish') || '[]'),
+  selectedCategory: null,
+  searchQuery: '',
+  sortBy: 'default',
+  currentProductId: null,
+  currentOrderId: null,
+  checkoutPayment: 'COD',
+  appliedCoupon: null,
+  loading: true,
+  loadError: null,
+  modal: null, // 'product' | null
+  toastMsg: null,
+};
+
+function saveCart(){ localStorage.setItem('fc_cart', JSON.stringify(state.cart)); }
+function saveWish(){ localStorage.setItem('fc_wish', JSON.stringify(state.wishlist)); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function inr(n){ return '' + (Math.round((n||0)*100)/100).toLocaleString('en-IN'); }
+function toast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toastMsg=null; render(); }, 2200); }
+function go(screen, extra={}){ Object.assign(state, {screen}, extra); window.scrollTo(0,0); render(); }
+
+/* ---------------- Auth ---------------- */
+function initAuth(){
+  if(!fbReady){ state.loading = false; state.screen='config'; render(); return; }
+  auth.onAuthStateChanged(async (u) => {
+    state.user = u;
+    if(u){
+      try{
+        const doc = await db.collection('users').doc(u.uid).get();
+        state.profile = doc.exists ? doc.data() : null;
+      }catch(e){ state.loadError = e.message; }
+      await loadAllData();
+      state.screen = (state.screen==='splash'||state.screen==='login'||state.screen==='signup'||state.screen==='forgot') ? 'home' : state.screen;
+    } else {
+      state.profile = null;
+      await loadCatalogOnly();
+      if(state.screen==='splash') state.screen = 'login';
+    }
+    state.loading = false;
+    render();
+  });
+}
+
+async function handleSignup(e){
+  e.preventDefault();
+  const f = e.target;
+  const name = f.name.value.trim(), email = f.email.value.trim(), phone = f.phone.value.trim(), pass = f.password.value;
+  if(!name || !email || pass.length < 6){ toast('Please fill all fields (password  6 chars).'); return; }
+  try{
+    setBtnLoading(f,true);
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('users').doc(cred.user.uid).set({
+      id: cred.user.uid, name, email, phone, role:'customer', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await cred.user.updateProfile({displayName:name});
+    toast('Welcome to FreshCart, ' + name.split(' ')[0] + '!');
+  }catch(err){ toast(err.message); setBtnLoading(f,false); }
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  const f = e.target;
+  const email = f.email.value.trim(), pass = f.password.value;
+  try{
+    setBtnLoading(f,true);
+    await auth.signInWithEmailAndPassword(email, pass);
+  }catch(err){ toast(err.message); setBtnLoading(f,false); }
+}
+
+async function handleForgot(e){
+  e.preventDefault();
+  const f = e.target;
+  const email = f.email.value.trim();
+  try{
+    setBtnLoading(f,true);
+    await auth.sendPasswordResetEmail(email);
+    toast('Password reset email sent.');
+    go('login');
+  }catch(err){ toast(err.message); setBtnLoading(f,false); }
+}
+
+function handleLogout(){ auth.signOut(); state.cart=[]; saveCart(); go('login'); }
+
+function setBtnLoading(form, val){
+  const b = form.querySelector('button[type=submit]');
+  if(!b) return;
+  if(val){ b.dataset.label = b.innerHTML; b.innerHTML='Please wait…'; b.disabled=true; }
+  else { b.innerHTML = b.dataset.label || b.innerHTML; b.disabled=false; }
+}
+
+/* ---------------- Data loading ---------------- */
+async function loadCatalogOnly(){
+  try{
+    const [catSnap, prodSnap, offSnap, paySnap, storeSnap] = await Promise.all([
+      db.collection('categories').where('active','==',true).get(),
+      db.collection('products').where('active','==',true).get(),
+      db.collection('coupons').where('active','==',true).get().catch(()=>({docs:[]})),
+      db.collection('paymentSettings').doc('default').get().catch(()=>({exists:false})),
+      db.collection('storeSettings').doc('default').get().catch(()=>({exists:false})),
+    ]);
+    state.categories = catSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    state.products = prodSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    state.coupons = offSnap.docs.map(d=>({id:d.id, ...d.data()}));
+    state.paymentSettings = paySnap.exists ? paySnap.data() : null;
+    state.storeSettings = storeSnap.exists ? storeSnap.data() : null;
+  }catch(e){ state.loadError = e.message; }
+}
+
+async function loadAllData(){
+  await loadCatalogOnly();
+  if(!state.user) return;
+  try{
+    // Filter only (no orderBy) so this never needs a Firestore composite
+    // index — sort client-side instead, newest first.
+    const ordSnap = await db.collection('orders').where('userId','==',state.user.uid).get();
+    state.orders = ordSnap.docs
+      .map(d=>({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.createdAt?.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt?.toMillis ? a.createdAt.toMillis() : 0));
+  }catch(e){ state.orders = []; toast('Could not load order history: ' + e.message); }
+}
+
+/* ---------------- Cart logic ---------------- */
+function cartQty(pid){ const it = state.cart.find(c=>c.productId===pid); return it? it.qty:0; }
+function addToCart(pid){
+  const p = state.products.find(x=>x.id===pid); if(!p) return;
+  const existing = state.cart.find(c=>c.productId===pid);
+  const stock = p.stock ?? 0;
+  if(existing){
+    if(existing.qty >= stock){ toast('Only '+stock+' in stock'); return; }
+    existing.qty++;
+  } else {
+    if(stock < 1){ toast('Out of stock'); return; }
+    state.cart.push({productId:pid, qty:1});
+  }
+  saveCart(); render();
+}
+function decCart(pid){
+  const existing = state.cart.find(c=>c.productId===pid); if(!existing) return;
+  existing.qty--;
+  if(existing.qty<=0) state.cart = state.cart.filter(c=>c.productId!==pid);
+  saveCart(); render();
+}
+function removeFromCart(pid){ state.cart = state.cart.filter(c=>c.productId!==pid); saveCart(); render(); }
+function toggleWish(pid){
+  if(state.wishlist.includes(pid)) state.wishlist = state.wishlist.filter(x=>x!==pid);
+  else state.wishlist.push(pid);
+  saveWish(); render();
+}
+function finalPrice(p){ const d=p.discount||0; return Math.max(0, (p.price||0) * (1-d/100)); }
+function cartItems(){ return state.cart.map(c=>({...c, product: state.products.find(p=>p.id===c.productId)})).filter(c=>c.product); }
+function cartSubtotal(){ return cartItems().reduce((s,c)=> s + finalPrice(c.product)*c.qty, 0); }
+function cartMrpTotal(){ return cartItems().reduce((s,c)=> s + (c.product.price||0)*c.qty, 0); }
+function cartDiscount(){ return Math.max(0, cartMrpTotal() - cartSubtotal()); }
+function couponDiscount(){
+  if(!state.appliedCoupon) return 0;
+  const c = state.appliedCoupon, sub = cartSubtotal();
+  if(sub < (c.minimumOrder||0)) return 0;
+  return c.type==='percentage' ? sub*(c.value/100) : Math.min(c.value, sub);
+}
+function deliveryCharge(){ const sub = cartSubtotal() - couponDiscount(); return sub >= FREE_DELIVERY_ABOVE || sub<=0 ? 0 : DELIVERY_CHARGE; }
+function cartTotal(){ return Math.max(0, cartSubtotal() - couponDiscount() + deliveryCharge()); }
+
+function applyCoupon(code){
+  const c = state.coupons.find(x=>x.code.toUpperCase()===code.toUpperCase().trim());
+  if(!c){ toast('Invalid coupon code'); return; }
+  if(cartSubtotal() < (c.minimumOrder||0)){ toast('Minimum order '+inr(c.minimumOrder)+' required'); return; }
+  state.appliedCoupon = c; toast('Coupon applied!'); render();
+}
+
+/* ---------------- Checkout / Orders ---------------- */
+async function placeOrder(addressData){
+  if(cartItems().length===0){ toast('Your cart is empty'); return; }
+  try{
+    const orderRef = db.collection('orders').doc();
+    const items = cartItems().map(c=>({
+      productId:c.product.id, name:c.product.name, unit:c.product.unit||'',
+      price:c.product.price, discount:c.product.discount||0, finalPrice:finalPrice(c.product), qty:c.qty
+    }));
+    await db.runTransaction(async (tx) => {
+      // Verify & reduce stock atomically
+      const productRefs = items.map(it => db.collection('products').doc(it.productId));
+      const snaps = await Promise.all(productRefs.map(r=>tx.get(r)));
+      snaps.forEach((snap, i) => {
+        const data = snap.data();
+        if(!data || (data.stock||0) < items[i].qty){
+          throw new Error('"' + items[i].name + '" no longer has enough stock.');
+        }
+      });
+      snaps.forEach((snap, i) => {
+        tx.update(productRefs[i], { stock: snap.data().stock - items[i].qty });
+      });
+      tx.set(orderRef, {
+        id: orderRef.id, userId: state.user.uid,
+        customerName: addressData.name, customerPhone: addressData.phone,
+        items, subtotal: cartSubtotal(), discount: cartDiscount() + couponDiscount(),
+        couponCode: state.appliedCoupon ? state.appliedCoupon.code : null,
+        deliveryCharge: deliveryCharge(), total: cartTotal(),
+        address: { line: addressData.address, landmark: addressData.landmark, pincode: addressData.pincode },
+        paymentMethod: state.checkoutPayment,
+        paymentStatus: 'PENDING',
+        orderStatus: 'PLACED',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    if(state.checkoutPayment === 'ONLINE'){
+      await db.collection('payments').add({
+        orderId: orderRef.id, userId: state.user.uid, amount: cartTotal(),
+        method:'ONLINE', transactionId:null, status:'PENDING',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('payments').add({
+        orderId: orderRef.id, userId: state.user.uid, amount: cartTotal(),
+        method:'COD', transactionId:null, status:'PENDING',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    state.cart = []; saveCart(); state.appliedCoupon = null;
+    await loadAllData();
+    toast('Order placed successfully!');
+    go('orderSuccess', {currentOrderId: orderRef.id});
+  }catch(e){
+    toast(e.message || 'Could not place order');
+  }
+}
+
+const STATUS_STEPS = ['PLACED','CONFIRMED','PREPARING','READY','OUT_FOR_DELIVERY','DELIVERED'];
+const STATUS_LABEL = {PLACED:'Placed',CONFIRMED:'Confirmed',PREPARING:'Preparing',READY:'Ready',OUT_FOR_DELIVERY:'On the way',DELIVERED:'Delivered',CANCELLED:'Cancelled'};
+
+/* ---------------- Rendering ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  if(state.loading){ app.innerHTML = renderSplash(); return; }
+  let html = '';
+  switch(state.screen){
+    case 'config': html = renderConfigNeeded(); break;
+    case 'login': case 'signup': case 'forgot': html = renderAuth(); break;
+    case 'home': html = withNav(renderHome(), 'home'); break;
+    case 'categories': html = withNav(renderCategories(), 'categories'); break;
+    case 'search': html = withNav(renderSearch(), 'home'); break;
+    case 'cart': html = withNav(renderCart(), 'cart'); break;
+    case 'checkout': html = renderCheckout(); break;
+    case 'orderSuccess': html = renderOrderSuccess(); break;
+    case 'orders': html = withNav(renderOrders(), 'orders'); break;
+    case 'orderDetail': html = renderOrderDetail(); break;
+    case 'profile': html = withNav(renderProfile(), 'profile'); break;
+    case 'addresses': html = renderAddresses(); break;
+    default: html = withNav(renderHome(), 'home');
+  }
+  app.innerHTML = html + (state.modal==='product' ? renderProductModal() : '') + (state.toastMsg ? `<div class="toast">${esc(state.toastMsg)}</div>` : '');
+  attachDynamicHandlers();
+}
+
+function withNav(inner, active){
+  return `<div class="screen">${inner}</div>` + renderBottomNav(active);
+}
+
+function renderSplash(){
+  return `<div class="splash"><div class="ic"></div><h1 class="display">FreshCart</h1><p>Groceries at your doorstep</p></div>`;
+}
+
+function renderConfigNeeded(){
+  return `<div style="padding:40px 24px;text-align:center;">
+    <div style="font-size:44px;"></div>
+    <h2>Connect Firebase to continue</h2>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6;">
+      This app needs a Firebase project. Open this file and replace <code>firebaseConfig</code>
+      near the top of the &lt;script&gt; with your project's config (or set
+      <code>window.__FIREBASE_CONFIG__</code> before this file loads). See README.md for the
+      full setup guide including Firestore/Storage rules and sample data.
+    </p>
+  </div>`;
+}
+
+function renderBottomNav(active){
+  const items = [
+    {k:'home', ic:'', lbl:'Home'},
+    {k:'categories', ic:'', lbl:'Categories'},
+    {k:'cart', ic:'', lbl:'Cart', badge: state.cart.reduce((s,c)=>s+c.qty,0)},
+    {k:'orders', ic:'', lbl:'Orders'},
+    {k:'profile', ic:'', lbl:'Profile'},
+  ];
+  return `<div class="bottomnav">${items.map(it=>`
+    <a class="navitem ${active===it.k?'active':''}" href="javascript:void(0)" onclick="go('${it.k}')">
+      ${it.badge?`<span class="navdot">${it.badge}</span>`:''}
+      <span class="ic">${it.ic}</span>${it.lbl}
+    </a>`).join('')}</div>`;
+}
+
+/* ---- Auth screens ---- */
+function renderAuth(){
+  if(state.authMode==='signup' || state.screen==='signup') return renderSignup();
+  if(state.authMode==='forgot' || state.screen==='forgot') return renderForgot();
+  return renderLogin();
+}
+function renderLogin(){
+  return `<div class="auth-wrap">
+    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-card">
+      <h2>Welcome back</h2><p class="sub">Log in to continue shopping</p>
+      <form onsubmit="handleLogin(event)">
+        <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" name="password" required placeholder="••••••••"></div>
+        <div style="text-align:right;margin-bottom:14px;"><a href="javascript:void(0)" onclick="go('forgot',{authMode:'forgot'})" style="font-size:12px;color:var(--green-700);font-weight:600;">Forgot password?</a></div>
+        <button class="btn btn-primary" type="submit">Log In</button>
+      </form>
+      <p class="switch">New here? <a href="javascript:void(0)" onclick="go('signup',{authMode:'signup'})"><b>Create an account</b></a></p>
+    </div>
+  </div>`;
+}
+function renderSignup(){
+  return `<div class="auth-wrap">
+    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-card">
+      <h2>Create account</h2><p class="sub">Fresh groceries, delivered fast</p>
+      <form onsubmit="handleSignup(event)">
+        <div class="field"><label>Full name</label><input name="name" required placeholder="Jane Doe"></div>
+        <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@example.com"></div>
+        <div class="field"><label>Phone</label><input name="phone" required placeholder="98765 43210"></div>
+        <div class="field"><label>Password</label><input type="password" name="password" required minlength="6" placeholder="Min 6 characters"></div>
+        <button class="btn btn-primary" type="submit">Sign Up</button>
+      </form>
+      <p class="switch">Already have an account? <a href="javascript:void(0)" onclick="go('login',{authMode:'login'})"><b>Log in</b></a></p>
+    </div>
+  </div>`;
+}
+function renderForgot(){
+  return `<div class="auth-wrap">
+    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-card">
+      <h2>Reset password</h2><p class="sub">We'll email you a reset link</p>
+      <form onsubmit="handleForgot(event)">
+        <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@example.com"></div>
+        <button class="btn btn-primary" type="submit">Send Reset Link</button>
+      </form>
+      <p class="switch"><a href="javascript:void(0)" onclick="go('login',{authMode:'login'})"><b> Back to login</b></a></p>
+    </div>
+  </div>`;
+}
+
+/* ---- Home ---- */
+function renderHome(){
+  const featured = state.products.filter(p=>p.featured).slice(0,6);
+  const bestSelling = [...state.products].sort((a,b)=>(b.soldCount||0)-(a.soldCount||0)).slice(0,6);
+  const onOffer = state.products.filter(p=>(p.discount||0) > 0).slice(0,6);
+  const ss = state.storeSettings;
+  return `
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">${ss?.logoUrl ? `<img src="${esc(ss.logoUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : ''}</div>
+      <div><div class="brand-name">${esc(ss?.storeName || 'FreshCart')}</div><div class="brand-tag">Delivering to your doorstep</div></div>
+    </div>
+    <div class="searchbar" onclick="go('search')">
+      <span></span><input placeholder="Search for atta, milk, fruits…" readonly>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-head"><h2>Shop by Category</h2><span class="link" onclick="go('categories')">See all</span></div>
+    <div class="cat-row">
+      ${state.categories.map(c=>`
+        <div class="cat-pill" onclick="go('categories',{selectedCategory:'${c.id}'})">
+          <div class="ic">${c.image ? `<img src="${esc(c.image)}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : catEmoji(c.name)}</div>
+          <span>${esc(c.name)}</span>
+        </div>`).join('') || skeletonRow()}
+    </div>
+  </div>
+  <div class="section">
+    ${ss?.bannerUrl
+      ? `<div style="border-radius:18px;overflow:hidden;box-shadow:var(--shadow);"><img src="${esc(ss.bannerUrl)}" style="width:100%;display:block;"></div>`
+      : `<div class="banner">
+          <div><h3>Today's Offer</h3><p>On select fruits & veggies</p></div>
+          <div class="pct">UP TO<br>30% OFF</div>
+        </div>`}
+  </div>
+  ${productRail('Featured Products', featured)}
+  ${productRail('Best Sellers', bestSelling)}
+  ${productRail("Today's Offers", onOffer)}
+  ${state.products.length===0 && !state.loadError ? `<div class="empty"><div class="ic"></div><h3>Catalog is empty</h3><p>Add products from the Admin Panel to see them here.</p></div>` : ''}
+  ${state.loadError ? `<div class="empty"><div class="ic"></div><h3>Couldn't load data</h3><p>${esc(state.loadError)}</p></div>` : ''}
+  `;
+}
+function productRail(title, list){
+  if(!list.length) return '';
+  return `<div class="section">
+    <div class="section-head"><h2>${title}</h2></div>
+    <div class="cat-row" style="gap:12px;">
+      ${list.map(p=>`<div style="width:150px;flex:0 0 auto;">${productCard(p)}</div>`).join('')}
+    </div>
+  </div>`;
+}
+function skeletonRow(){ return Array(6).fill(0).map(()=>`<div class="cat-pill"><div class="ic skeleton" style="background:#eee;"></div></div>`).join(''); }
+
+function productCard(p){
+  const qty = cartQty(p.id);
+  const oos = (p.stock||0) <= 0;
+  const wished = state.wishlist.includes(p.id);
+  return `<div class="pcard ${oos?'oos':''}">
+    <div class="img" onclick="openProduct('${p.id}')">
+      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}">` : catEmoji(p.category)}
+      ${p.discount>0?`<div class="badge">${p.discount}% OFF</div>`:''}
+      ${oos?`<div class="oos-tag">Out of stock</div>`:''}
+      <button class="wish" onclick="event.stopPropagation();toggleWish('${p.id}')">${wished?'':''}</button>
+    </div>
+    <div class="name" onclick="openProduct('${p.id}')">${esc(p.name)}</div>
+    <div class="unit">${esc(p.unit||'')}</div>
+    <div class="row">
+      <div class="price">${inr(finalPrice(p))}${p.discount>0?`<span class="strike">${inr(p.price)}</span>`:''}</div>
+      ${oos ? '' : (qty>0
+        ? `<div class="qtybox"><button onclick="decCart('${p.id}')"></button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>`
+        : `<button class="addbtn" onclick="addToCart('${p.id}')">+</button>`)}
+    </div>
+  </div>`;
+}
+
+/* ---- Categories / listing ---- */
+function renderCategories(){
+  const cat = state.categories.find(c=>c.id===state.selectedCategory);
+  let list = state.products;
+  if(state.selectedCategory) list = list.filter(p=>p.categoryId===state.selectedCategory);
+  list = sortList(list);
+  return `
+  <div class="pageheader">
+    <button class="iconbtn" onclick="go(state.selectedCategory?'categories':'home',{selectedCategory:null})"></button>
+    <h2>${cat?esc(cat.name):'All Categories'}</h2>
+  </div>
+  ${!state.selectedCategory ? `
+  <div class="section"><div class="grid" style="grid-template-columns:repeat(3,1fr);">
+    ${state.categories.map(c=>`
+      <div class="cat-pill" style="width:auto;" onclick="go('categories',{selectedCategory:'${c.id}'})">
+        <div class="ic" style="width:100%;height:70px;font-size:30px;">${c.image ? `<img src="${esc(c.image)}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : catEmoji(c.name)}</div>
+        <span>${esc(c.name)}</span>
+      </div>`).join('')}
+  </div></div>` : `
+  <div class="section" style="padding-bottom:0;">${sortBar()}</div>
+  <div class="section"><div class="grid">${list.map(productCard).join('') || emptyBlock('','No products yet','Check back soon.')}</div></div>
+  `}`;
+}
+
+function sortBar(){
+  return `<div style="display:flex;gap:8px;overflow-x:auto;">
+    ${[['default','Relevance'],['priceLow','Price: LowHigh'],['priceHigh','Price: HighLow'],['discount','Best Discount']]
+      .map(([k,l])=>`<button class="tab ${state.sortBy===k?'active':''}" onclick="setSort('${k}')">${l}</button>`).join('')}
+  </div>`;
+}
+function setSort(k){ state.sortBy = k; render(); }
+function sortList(list){
+  const l = [...list];
+  if(state.sortBy==='priceLow') l.sort((a,b)=>finalPrice(a)-finalPrice(b));
+  if(state.sortBy==='priceHigh') l.sort((a,b)=>finalPrice(b)-finalPrice(a));
+  if(state.sortBy==='discount') l.sort((a,b)=>(b.discount||0)-(a.discount||0));
+  return l;
+}
+function emptyBlock(ic,h,p){ return `<div class="empty" style="grid-column:1/-1;"><div class="ic">${ic}</div><h3>${h}</h3><p>${p}</p></div>`; }
+
+/* ---- Search ---- */
+function renderSearch(){
+  const q = state.searchQuery.trim().toLowerCase();
+  let list = state.products;
+  if(q) list = list.filter(p=>p.name.toLowerCase().includes(q));
+  if(state.selectedCategory) list = list.filter(p=>p.categoryId===state.selectedCategory);
+  list = sortList(list);
+  return `
+  <div class="pageheader">
+    <button class="iconbtn" onclick="go('home')"></button>
+    <div class="searchbar" style="margin:0;flex:1;box-shadow:none;border:1.5px solid var(--line);">
+      <span></span><input id="searchInput" autofocus value="${esc(state.searchQuery)}" oninput="onSearchInput(this.value)" placeholder="Search products…">
+    </div>
+  </div>
+  <div class="section" style="padding-bottom:0;">
+    <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:10px;">
+      <button class="tab ${!state.selectedCategory?'active':''}" onclick="state.selectedCategory=null;render()">All</button>
+      ${state.categories.map(c=>`<button class="tab ${state.selectedCategory===c.id?'active':''}" onclick="state.selectedCategory='${c.id}';render()">${esc(c.name)}</button>`).join('')}
+    </div>
+    ${sortBar()}
+  </div>
+  <div class="section"><div class="grid">
+    ${q||state.selectedCategory ? (list.map(productCard).join('') || emptyBlock('','No matches','Try a different search term.')) : `<div class="empty" style="grid-column:1/-1;"><div class="ic"></div><h3>Search FreshCart</h3><p>Find products by name.</p></div>`}
+  </div></div>`;
+}
+function onSearchInput(v){ state.searchQuery = v; render(); document.getElementById('searchInput')?.focus(); const el=document.getElementById('searchInput'); if(el){ el.selectionStart=el.selectionEnd=el.value.length; } }
+
+/* ---- Product modal ---- */
+function openProduct(pid){ state.currentProductId = pid; state.modal='product'; render(); }
+function closeModal(){ state.modal=null; render(); }
+function renderProductModal(){
+  const p = state.products.find(x=>x.id===state.currentProductId);
+  if(!p) return '';
+  const qty = cartQty(p.id);
+  const oos = (p.stock||0) <= 0;
+  const wished = state.wishlist.includes(p.id);
+  return `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="modal-sheet">
+      <div class="pdetail-hero">
+        ${p.imageUrl?`<img src="${esc(p.imageUrl)}">`:catEmoji(p.category)}
+        <button class="modal-close" onclick="closeModal()"></button>
+      </div>
+      <div style="padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h2 style="margin:0 0 4px;font-size:18px;">${esc(p.name)}</h2>
+            <div style="color:var(--muted);font-size:13px;">${esc(p.unit||'')} · ${esc(p.category||'')}</div>
+          </div>
+          <button class="wish" style="position:static;width:34px;height:34px;" onclick="toggleWish('${p.id}')">${wished?'':''}</button>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:14px 0;">
+          <span style="font-size:22px;font-weight:800;">${inr(finalPrice(p))}</span>
+          ${p.discount>0?`<span class="strike" style="font-size:14px;">${inr(p.price)}</span><span class="badge" style="position:static;">${p.discount}% OFF</span>`:''}
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;">${esc(p.description||'No description available.')}</p>
+        <div style="font-size:12px;font-weight:700;color:${oos?'var(--tomato)':'var(--green-700)'};margin-bottom:16px;">
+          ${oos ? 'Out of stock' : (p.stock<10? `Only ${p.stock} left in stock` : 'In stock')}
+        </div>
+      </div>
+      <div style="padding:0 18px 24px;">
+        ${oos ? `<button class="btn btn-outline" disabled>Out of Stock</button>` :
+          qty>0
+          ? `<div class="qty-controls-lg" style="justify-content:space-between;">
+               <div class="qty-controls-lg"><button onclick="decCart('${p.id}')"></button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>
+               <button class="btn btn-primary" style="width:auto;padding:13px 22px;" onclick="closeModal();go('cart')">Go to Cart</button>
+             </div>`
+          : `<button class="btn btn-primary" onclick="addToCart('${p.id}');render()">Add to Cart</button>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---- Cart ---- */
+function renderCart(){
+  const items = cartItems();
+  if(items.length===0){
+    return `<div class="pageheader"><h2>My Cart</h2></div>
+      <div class="empty"><div class="ic"></div><h3>Your cart is empty</h3><p>Add fresh groceries to get started.</p>
+      <button class="btn btn-primary" style="width:auto;padding:12px 24px;" onclick="go('home')">Start Shopping</button></div>`;
+  }
+  return `
+  <div class="pageheader"><h2>My Cart (${items.reduce((s,c)=>s+c.qty,0)} items)</h2></div>
+  <div>${items.map(c=>`
+    <div class="cartrow">
+      <div class="img">${c.product.imageUrl?`<img src="${esc(c.product.imageUrl)}">`:catEmoji(c.product.category)}</div>
+      <div class="info">
+        <div class="n">${esc(c.product.name)}</div>
+        <div class="u">${esc(c.product.unit||'')}</div>
+        <div style="font-weight:700;font-size:13px;margin-top:4px;">${inr(finalPrice(c.product))} <span style="color:var(--muted);font-weight:500;">× ${c.qty}</span></div>
+      </div>
+      <div class="right">
+        <div class="qtybox" style="background:var(--cream);"><button style="color:var(--ink);" onclick="decCart('${c.productId}')"></button><span style="color:var(--ink);">${c.qty}</span><button style="color:var(--ink);" onclick="addToCart('${c.productId}')">+</button></div>
+        <button class="rm" onclick="removeFromCart('${c.productId}')">Remove</button>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="section">
+    <div class="coupon-card">
+      ${state.appliedCoupon ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><b>${esc(state.appliedCoupon.code)}</b> applied <div style="font-size:11px;color:var(--muted);">You saved ${inr(couponDiscount())}</div></div>
+          <button class="rm" onclick="state.appliedCoupon=null;render()">Remove</button>
+        </div>` : `
+        <div style="display:flex;gap:8px;">
+          <input id="couponInput" placeholder="Enter coupon code" style="flex:1;border:none;background:transparent;font-size:13px;outline:none;">
+          <button class="btn-ghost" style="font-weight:700;" onclick="applyCoupon(document.getElementById('couponInput').value)">Apply</button>
+        </div>`}
+    </div>
+  </div>
+  <div class="summary">
+    <div class="sumrow"><span>MRP Total</span><span>${inr(cartMrpTotal())}</span></div>
+    <div class="sumrow"><span>Product Discount</span><span> ${inr(cartDiscount())}</span></div>
+    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon (${esc(state.appliedCoupon.code)})</span><span> ${inr(couponDiscount())}</span></div>`:''}
+    <div class="sumrow"><span>Delivery Charge</span><span>${deliveryCharge()===0?'FREE':inr(deliveryCharge())}</span></div>
+    <div class="sumrow total"><span>To Pay</span><span>${inr(cartTotal())}</span></div>
+  </div>
+  <div style="height:90px;"></div>
+  <div class="stickybar"><button class="btn btn-primary" onclick="go('checkout')">Proceed to Checkout </button></div>
+  `;
+}
+
+/* ---- Checkout ---- */
+function renderCheckout(){
+  const saved = state.profile?.addresses?.[0];
+  return `
+  <div class="pageheader"><button class="iconbtn" onclick="go('cart')"></button><h2>Checkout</h2></div>
+  <div class="section" style="padding-bottom:0;">
+    <h3 style="font-size:14px;margin:0 0 10px;">Delivery Details</h3>
+    <form id="checkoutForm" onsubmit="return false;">
+      <div class="field"><label>Full name</label><input name="name" required value="${esc(state.profile?.name||'')}"></div>
+      <div class="field"><label>Phone number</label><input name="phone" required value="${esc(state.profile?.phone||'')}"></div>
+      <div class="field"><label>Delivery address</label><textarea name="address" rows="2" required placeholder="House no, street, area">${esc(saved?.line||'')}</textarea></div>
+      <div class="field"><label>Landmark</label><input name="landmark" placeholder="Near…" value="${esc(saved?.landmark||'')}"></div>
+      <div class="field"><label>Pincode</label><input name="pincode" required pattern="[0-9]{6}" placeholder="6-digit pincode" value="${esc(saved?.pincode||'')}"></div>
+    </form>
+  </div>
+  <div class="section" style="padding-top:0;">
+    <h3 style="font-size:14px;margin:14px 0 10px;">Payment Method</h3>
+    <label class="payopt ${state.checkoutPayment==='COD'?'selected':''}">
+      <input type="radio" name="pm" ${state.checkoutPayment==='COD'?'checked':''} onchange="state.checkoutPayment='COD';render()">
+      <div><b style="font-size:13px;">Cash on Delivery</b><div style="font-size:11px;color:var(--muted);">Pay when your order arrives</div></div>
+    </label>
+    <label class="payopt ${state.checkoutPayment==='ONLINE'?'selected':''}">
+      <input type="radio" name="pm" ${state.checkoutPayment==='ONLINE'?'checked':''} onchange="state.checkoutPayment='ONLINE';render()">
+      <div><b style="font-size:13px;">Online Payment (UPI)</b><div style="font-size:11px;color:var(--muted);">Pay via UPI / QR code</div></div>
+    </label>
+    ${state.checkoutPayment==='ONLINE' ? renderOnlinePayBlock() : ''}
+  </div>
+  <div class="summary">
+    <div class="sumrow"><span>Subtotal</span><span>${inr(cartSubtotal())}</span></div>
+    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon discount</span><span> ${inr(couponDiscount())}</span></div>`:''}
+    <div class="sumrow"><span>Delivery</span><span>${deliveryCharge()===0?'FREE':inr(deliveryCharge())}</span></div>
+    <div class="sumrow total"><span>Total Payable</span><span>${inr(cartTotal())}</span></div>
+  </div>
+  <div style="height:90px;"></div>
+  <div class="stickybar"><button class="btn btn-primary" onclick="submitCheckout()">Place Order</button></div>
+  `;
+}
+function buildUpiLink(amount, ps){
+  const params = new URLSearchParams({
+    pa: ps.upiId || '',
+    pn: ps.merchantName || 'Store',
+    am: amount.toFixed(2),
+    cu: 'INR',
+    tn: 'FreshCart order',
+  });
+  return 'upi://pay?' + params.toString();
+}
+function renderOnlinePayBlock(){
+  const ps = state.paymentSettings;
+  if(!ps || !ps.onlinePaymentEnabled){
+    return `<div class="empty" style="padding:20px;"><p style="margin:0;">Online payment is currently unavailable. Please choose Cash on Delivery.</p></div>`;
+  }
+  if(!ps.upiId){
+    return `<div class="empty" style="padding:20px;"><p style="margin:0;">Online payment isn't fully set up yet. Please choose Cash on Delivery.</p></div>`;
+  }
+  const amount = cartTotal();
+  const upiLink = buildUpiLink(amount, ps);
+  const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(upiLink);
+  return `<div class="qr-box">
+    <a href="${esc(upiLink)}" class="btn btn-primary" style="text-decoration:none;display:inline-flex;margin-bottom:16px;"> Pay ${inr(amount)} via UPI App</a>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">On a computer? Scan this QR with your phone's UPI app instead:</div>
+    <img src="${qrImg}" alt="Scan to pay" style="width:170px;height:170px;border-radius:12px;background:#fff;padding:8px;">
+    <div style="margin-top:10px;font-weight:700;font-size:14px;">${esc(ps.merchantName||'Store')}</div>
+    <div style="color:var(--muted);font-size:12px;">UPI ID: ${esc(ps.upiId||'')}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5;">
+      The button/QR above already has the exact amount filled in — just confirm in your UPI app.
+      After paying, place your order below; an admin verifies the payment before marking it PAID.
+      Entering a UTR or screenshot does not by itself confirm payment.
+    </div>
+  </div>`;
+}
+function submitCheckout(){
+  const f = document.getElementById('checkoutForm');
+  if(!f.reportValidity()) return;
+  const data = {
+    name: f.name.value.trim(), phone: f.phone.value.trim(),
+    address: f.address.value.trim(), landmark: f.landmark.value.trim(), pincode: f.pincode.value.trim()
+  };
+  placeOrder(data);
+}
+
+function renderOrderSuccess(){
+  const o = state.orders.find(x=>x.id===state.currentOrderId);
+  return `<div class="auth-wrap" style="background:var(--cream);min-height:100vh;">
+    <div style="text-align:center;padding-top:40px;">
+      <div style="font-size:60px;"></div>
+      <h2 style="margin:14px 0 6px;">Order placed!</h2>
+      <p style="color:var(--muted);font-size:13px;">Order ID: ${state.currentOrderId?.slice(0,8)}</p>
+      <p style="color:var(--muted);font-size:13px;">${o?inr(o.total):''}</p>
+      <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="go('orderDetail',{currentOrderId:'${state.currentOrderId}'})">Track Order</button>
+        <button class="btn btn-ghost" onclick="go('home')">Continue Shopping</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---- Orders ---- */
+function renderOrders(){
+  if(!state.orders.length) return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()"></button></div>
+    <div class="empty"><div class="ic"></div><h3>No orders yet</h3><p>Your order history will show up here.</p></div>`;
+  const current = state.orders.filter(o=>!['DELIVERED','CANCELLED'].includes(o.orderStatus));
+  const past = state.orders.filter(o=>['DELIVERED','CANCELLED'].includes(o.orderStatus));
+  return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()"></button></div>
+    ${current.length?`<div class="section" style="padding-bottom:0;"><h3 style="font-size:13px;color:var(--muted);">CURRENT ORDERS</h3></div>${current.map(orderCard).join('')}`:''}
+    ${past.length?`<div class="section" style="padding-bottom:0;"><h3 style="font-size:13px;color:var(--muted);">PAST ORDERS</h3></div>${past.map(orderCard).join('')}`:''}
+  `;
+}
+async function refreshOrders(){ await loadAllData(); toast('Orders refreshed'); render(); }
+window.refreshOrders = refreshOrders;
+function orderCard(o){
+  const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '';
+  return `<div class="ordercard" onclick="go('orderDetail',{currentOrderId:'${o.id}'})">
+    <div class="top">
+      <div><div class="oid">Order #${o.id.slice(0,8)} · ${date}</div><div class="amt">${inr(o.total)}</div></div>
+      <span class="chip ${o.orderStatus}">${STATUS_LABEL[o.orderStatus]||o.orderStatus}</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);">${o.items.length} item${o.items.length>1?'s':''} · <span class="chip ${o.paymentStatus}" style="padding:2px 8px;">${o.paymentStatus}</span></div>
+  </div>`;
+}
+function renderOrderDetail(){
+  const o = state.orders.find(x=>x.id===state.currentOrderId);
+  if(!o) return `<div class="pageheader"><button class="iconbtn" onclick="go('orders')"></button><h2>Order</h2></div><div class="empty"><p>Order not found.</p></div>`;
+  const stepIdx = STATUS_STEPS.indexOf(o.orderStatus);
+  return `
+  <div class="pageheader"><button class="iconbtn" onclick="go('orders')"></button><h2>Order #${o.id.slice(0,8)}</h2></div>
+  <div class="section">
+    ${o.orderStatus==='CANCELLED' ? `<div class="empty" style="padding:20px;"><span class="chip CANCELLED">Cancelled</span></div>` : `
+    <div class="tracker">
+      ${STATUS_STEPS.map((s,i)=>`<div class="tstep ${i<=stepIdx?'done':''}"><div class="dot">${i<=stepIdx?'':''}</div><div class="lbl">${STATUS_LABEL[s]}</div></div>`).join('')}
+    </div>`}
+  </div>
+  <div class="summary">
+    <h3 style="font-size:14px;margin:0 0 10px;">Items</h3>
+    ${o.items.map(it=>`<div class="sumrow"><span>${esc(it.name)} × ${it.qty}</span><span>${inr(it.finalPrice*it.qty)}</span></div>`).join('')}
+    <div class="sumrow" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;"><span>Subtotal</span><span>${inr(o.subtotal)}</span></div>
+    <div class="sumrow"><span>Discount</span><span> ${inr(o.discount)}</span></div>
+    <div class="sumrow"><span>Delivery</span><span>${o.deliveryCharge===0?'FREE':inr(o.deliveryCharge)}</span></div>
+    <div class="sumrow total"><span>Total</span><span>${inr(o.total)}</span></div>
+  </div>
+  <div class="summary">
+    <h3 style="font-size:14px;margin:0 0 10px;">Payment</h3>
+    <div class="sumrow"><span>Method</span><span>${o.paymentMethod}</span></div>
+    <div class="sumrow"><span>Status</span><span class="chip ${o.paymentStatus}">${o.paymentStatus}</span></div>
+  </div>
+  <div class="summary">
+    <h3 style="font-size:14px;margin:0 0 10px;">Delivery Address</h3>
+    <p style="font-size:13px;margin:0;color:var(--muted);line-height:1.6;">
+      ${esc(o.customerName)} · ${esc(o.customerPhone)}<br>
+      ${esc(o.address?.line)}${o.address?.landmark?', near '+esc(o.address.landmark):''}<br>
+      Pincode: ${esc(o.address?.pincode)}
+    </p>
+  </div>`;
+}
+
+/* ---- Profile ---- */
+function renderProfile(){
+  const p = state.profile || {};
+  const initials = (p.name||'?').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+  return `
+  <div class="pageheader"><h2>Profile</h2></div>
+  <div class="section" style="display:flex;align-items:center;gap:14px;">
+    <div class="avatar">${initials}</div>
+    <div><div style="font-weight:700;font-size:16px;">${esc(p.name||'Guest')}</div><div style="color:var(--muted);font-size:12px;">${esc(p.email||'')}</div></div>
+  </div>
+  <div class="profile-row"><div class="l"><span class="ic"></span>Phone</div><div style="color:var(--muted);font-size:13px;">${esc(p.phone||'—')}</div></div>
+  <div class="profile-row" onclick="go('addresses')"><div class="l"><span class="ic"></span>Saved Addresses</div><span>›</span></div>
+  <div class="profile-row" onclick="go('orders')"><div class="l"><span class="ic"></span>Order History</div><span>›</span></div>
+  <div class="profile-row"><div class="l"><span class="ic"></span>Wishlist</div><div style="color:var(--muted);font-size:13px;">${state.wishlist.length} items</div></div>
+  <div class="section">
+    <button class="btn btn-danger" onclick="handleLogout()">Log Out</button>
+  </div>`;
+}
+function renderAddresses(){
+  const addr = state.profile?.addresses?.[0];
+  return `<div class="pageheader"><button class="iconbtn" onclick="go('profile')"></button><h2>Saved Addresses</h2></div>
+  <div class="section">
+    ${addr ? `<div class="summary" style="margin:0;"><p style="font-size:13px;margin:0;line-height:1.6;">${esc(addr.line)}<br>${esc(addr.landmark||'')}<br>Pincode: ${esc(addr.pincode)}</p></div>`
+      : `<div class="empty"><div class="ic"></div><h3>No saved addresses</h3><p>Addresses you use at checkout are saved here.</p></div>`}
+  </div>`;
+}
+
+/* ---------------- Event delegation helpers ---------------- */
+function attachDynamicHandlers(){ /* reserved for future non-inline listeners */ }
+
+/* ---------------- Boot ---------------- */
+window.go = go; window.addToCart = addToCart; window.decCart = decCart; window.removeFromCart = removeFromCart;
+window.toggleWish = toggleWish; window.openProduct = openProduct; window.closeModal = closeModal;
+window.handleLogin = handleLogin; window.handleSignup = handleSignup; window.handleForgot = handleForgot; window.handleLogout = handleLogout;
+window.applyCoupon = applyCoupon; window.submitCheckout = submitCheckout; window.onSearchInput = onSearchInput; window.setSort = setSort;
+window.state = state;
+
+render();
+initAuth();
+</script>
+</body>
+</html>
