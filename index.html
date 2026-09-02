@@ -343,6 +343,12 @@ function toast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toas
 function go(screen, extra={}){ Object.assign(state, {screen}, extra); window.scrollTo(0,0); render(); }
 
 /* ---------------- Auth ---------------- */
+function getRequestedShortcutScreen(){
+  const allowed = ['cart', 'orders', 'search'];
+  const requested = new URLSearchParams(location.search).get('screen');
+  return allowed.includes(requested) ? requested : null;
+}
+
 function initAuth(){
   if(!fbReady){ state.loading = false; state.screen='config'; render(); return; }
   auth.onAuthStateChanged(async (u) => {
@@ -353,7 +359,9 @@ function initAuth(){
         state.profile = doc.exists ? doc.data() : null;
       }catch(e){ state.loadError = e.message; }
       await loadAllData();
-      state.screen = (state.screen==='splash'||state.screen==='login'||state.screen==='signup'||state.screen==='forgot') ? 'home' : state.screen;
+      const shortcutScreen = getRequestedShortcutScreen();
+      state.screen = shortcutScreen || ((state.screen==='splash'||state.screen==='login'||state.screen==='signup'||state.screen==='forgot') ? 'home' : state.screen);
+      if(shortcutScreen && history.replaceState) history.replaceState(null, '', location.pathname);
     } else {
       state.profile = null;
       await loadCatalogOnly();
