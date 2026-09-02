@@ -3,8 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>FreshCart � Grocery Delivered</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>">
+<title>FreshCart — Grocery Delivered</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥬</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#123524">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FreshCart">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -43,7 +50,7 @@ input,select,textarea{font-family:inherit;}
 a{color:inherit;text-decoration:none;}
 ::-webkit-scrollbar{width:0;height:0;}
 
-/* App shell � phone-frame on desktop, full width on mobile */
+/* App shell — phone-frame on desktop, full width on mobile */
 #appShell{
   max-width:480px;
   margin:0 auto;
@@ -265,7 +272,7 @@ a{color:inherit;text-decoration:none;}
 /* =========================================================
    FIREBASE CONFIG
    Replace with your project's config. Never commit real keys
-   to a public repo � use environment injection at deploy time
+   to a public repo — use environment injection at deploy time
    for production. This demo reads from window.__FIREBASE_CONFIG__
    if present, else falls back to the placeholder below.
 ========================================================= */
@@ -294,11 +301,11 @@ const DELIVERY_CHARGE = 40;
 const FREE_DELIVERY_ABOVE = 499;
 
 const CATEGORY_EMOJI = {
-  "Vegetables":"","Fruits":"","Dairy":"","Bakery":"","Snacks":"",
-  "Beverages":"","Rice & Grains":"","Pulses":"","Spices":"",
-  "Household":"","Personal Care":"","Instant Food":""
+  "Vegetables":"🥦","Fruits":"🍎","Dairy":"🥛","Bakery":"🍞","Snacks":"🍪",
+  "Beverages":"🧃","Rice & Grains":"🌾","Pulses":"🫘","Spices":"🌶️",
+  "Household":"🧺","Personal Care":"🧴","Instant Food":"🍜"
 };
-function catEmoji(name){ return CATEGORY_EMOJI[name] || ""; }
+function catEmoji(name){ return CATEGORY_EMOJI[name] || "🛒"; }
 
 /* ---------------- State ---------------- */
 let state = {
@@ -331,7 +338,7 @@ let state = {
 function saveCart(){ localStorage.setItem('fc_cart', JSON.stringify(state.cart)); }
 function saveWish(){ localStorage.setItem('fc_wish', JSON.stringify(state.wishlist)); }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function inr(n){ return '' + (Math.round((n||0)*100)/100).toLocaleString('en-IN'); }
+function inr(n){ return '₹' + (Math.round((n||0)*100)/100).toLocaleString('en-IN'); }
 function toast(msg){ state.toastMsg = msg; render(); setTimeout(()=>{ state.toastMsg=null; render(); }, 2200); }
 function go(screen, extra={}){ Object.assign(state, {screen}, extra); window.scrollTo(0,0); render(); }
 
@@ -361,7 +368,7 @@ async function handleSignup(e){
   e.preventDefault();
   const f = e.target;
   const name = f.name.value.trim(), email = f.email.value.trim(), phone = f.phone.value.trim(), pass = f.password.value;
-  if(!name || !email || pass.length < 6){ toast('Please fill all fields (password  6 chars).'); return; }
+  if(!name || !email || pass.length < 6){ toast('Please fill all fields (password ≥ 6 chars).'); return; }
   try{
     setBtnLoading(f,true);
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
@@ -400,7 +407,7 @@ function handleLogout(){ auth.signOut(); state.cart=[]; saveCart(); go('login');
 function setBtnLoading(form, val){
   const b = form.querySelector('button[type=submit]');
   if(!b) return;
-  if(val){ b.dataset.label = b.innerHTML; b.innerHTML='Please wait�'; b.disabled=true; }
+  if(val){ b.dataset.label = b.innerHTML; b.innerHTML='Please wait…'; b.disabled=true; }
   else { b.innerHTML = b.dataset.label || b.innerHTML; b.disabled=false; }
 }
 
@@ -427,7 +434,7 @@ async function loadAllData(){
   if(!state.user) return;
   try{
     // Filter only (no orderBy) so this never needs a Firestore composite
-    // index � sort client-side instead, newest first.
+    // index — sort client-side instead, newest first.
     const ordSnap = await db.collection('orders').where('userId','==',state.user.uid).get();
     state.orders = ordSnap.docs
       .map(d=>({id:d.id, ...d.data()}))
@@ -572,12 +579,12 @@ function withNav(inner, active){
 }
 
 function renderSplash(){
-  return `<div class="splash"><div class="ic"></div><h1 class="display">FreshCart</h1><p>Groceries at your doorstep</p></div>`;
+  return `<div class="splash"><div class="ic">🥬</div><h1 class="display">FreshCart</h1><p>Groceries at your doorstep</p></div>`;
 }
 
 function renderConfigNeeded(){
   return `<div style="padding:40px 24px;text-align:center;">
-    <div style="font-size:44px;"></div>
+    <div style="font-size:44px;">⚙️</div>
     <h2>Connect Firebase to continue</h2>
     <p style="color:var(--muted);font-size:13px;line-height:1.6;">
       This app needs a Firebase project. Open this file and replace <code>firebaseConfig</code>
@@ -590,11 +597,11 @@ function renderConfigNeeded(){
 
 function renderBottomNav(active){
   const items = [
-    {k:'home', ic:'', lbl:'Home'},
-    {k:'categories', ic:'', lbl:'Categories'},
-    {k:'cart', ic:'', lbl:'Cart', badge: state.cart.reduce((s,c)=>s+c.qty,0)},
-    {k:'orders', ic:'', lbl:'Orders'},
-    {k:'profile', ic:'', lbl:'Profile'},
+    {k:'home', ic:'🏠', lbl:'Home'},
+    {k:'categories', ic:'📂', lbl:'Categories'},
+    {k:'cart', ic:'🛒', lbl:'Cart', badge: state.cart.reduce((s,c)=>s+c.qty,0)},
+    {k:'orders', ic:'📦', lbl:'Orders'},
+    {k:'profile', ic:'👤', lbl:'Profile'},
   ];
   return `<div class="bottomnav">${items.map(it=>`
     <a class="navitem ${active===it.k?'active':''}" href="javascript:void(0)" onclick="go('${it.k}')">
@@ -611,12 +618,12 @@ function renderAuth(){
 }
 function renderLogin(){
   return `<div class="auth-wrap">
-    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-logo"><div class="ic">🥬</div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
     <div class="auth-card">
       <h2>Welcome back</h2><p class="sub">Log in to continue shopping</p>
       <form onsubmit="handleLogin(event)">
         <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@example.com"></div>
-        <div class="field"><label>Password</label><input type="password" name="password" required placeholder="��������"></div>
+        <div class="field"><label>Password</label><input type="password" name="password" required placeholder="••••••••"></div>
         <div style="text-align:right;margin-bottom:14px;"><a href="javascript:void(0)" onclick="go('forgot',{authMode:'forgot'})" style="font-size:12px;color:var(--green-700);font-weight:600;">Forgot password?</a></div>
         <button class="btn btn-primary" type="submit">Log In</button>
       </form>
@@ -626,7 +633,7 @@ function renderLogin(){
 }
 function renderSignup(){
   return `<div class="auth-wrap">
-    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-logo"><div class="ic">🥬</div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
     <div class="auth-card">
       <h2>Create account</h2><p class="sub">Fresh groceries, delivered fast</p>
       <form onsubmit="handleSignup(event)">
@@ -642,14 +649,14 @@ function renderSignup(){
 }
 function renderForgot(){
   return `<div class="auth-wrap">
-    <div class="auth-logo"><div class="ic"></div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
+    <div class="auth-logo"><div class="ic">🥬</div><h2 class="display" style="margin:8px 0 0;">FreshCart</h2></div>
     <div class="auth-card">
       <h2>Reset password</h2><p class="sub">We'll email you a reset link</p>
       <form onsubmit="handleForgot(event)">
         <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@example.com"></div>
         <button class="btn btn-primary" type="submit">Send Reset Link</button>
       </form>
-      <p class="switch"><a href="javascript:void(0)" onclick="go('login',{authMode:'login'})"><b> Back to login</b></a></p>
+      <p class="switch"><a href="javascript:void(0)" onclick="go('login',{authMode:'login'})"><b>← Back to login</b></a></p>
     </div>
   </div>`;
 }
@@ -663,11 +670,11 @@ function renderHome(){
   return `
   <div class="topbar">
     <div class="brand">
-      <div class="logo">${ss?.logoUrl ? `<img src="${esc(ss.logoUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : ''}</div>
+      <div class="logo">${ss?.logoUrl ? `<img src="${esc(ss.logoUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : '🥬'}</div>
       <div><div class="brand-name">${esc(ss?.storeName || 'FreshCart')}</div><div class="brand-tag">Delivering to your doorstep</div></div>
     </div>
     <div class="searchbar" onclick="go('search')">
-      <span></span><input placeholder="Search for atta, milk, fruits�" readonly>
+      <span>🔎</span><input placeholder="Search for atta, milk, fruits…" readonly>
     </div>
   </div>
   <div class="section">
@@ -691,8 +698,8 @@ function renderHome(){
   ${productRail('Featured Products', featured)}
   ${productRail('Best Sellers', bestSelling)}
   ${productRail("Today's Offers", onOffer)}
-  ${state.products.length===0 && !state.loadError ? `<div class="empty"><div class="ic"></div><h3>Catalog is empty</h3><p>Add products from the Admin Panel to see them here.</p></div>` : ''}
-  ${state.loadError ? `<div class="empty"><div class="ic"></div><h3>Couldn't load data</h3><p>${esc(state.loadError)}</p></div>` : ''}
+  ${state.products.length===0 && !state.loadError ? `<div class="empty"><div class="ic">🛒</div><h3>Catalog is empty</h3><p>Add products from the Admin Panel to see them here.</p></div>` : ''}
+  ${state.loadError ? `<div class="empty"><div class="ic">⚠️</div><h3>Couldn't load data</h3><p>${esc(state.loadError)}</p></div>` : ''}
   `;
 }
 function productRail(title, list){
@@ -715,14 +722,14 @@ function productCard(p){
       ${p.imageUrl ? `<img src="${esc(p.imageUrl)}">` : catEmoji(p.category)}
       ${p.discount>0?`<div class="badge">${p.discount}% OFF</div>`:''}
       ${oos?`<div class="oos-tag">Out of stock</div>`:''}
-      <button class="wish" onclick="event.stopPropagation();toggleWish('${p.id}')">${wished?'':''}</button>
+      <button class="wish" onclick="event.stopPropagation();toggleWish('${p.id}')">${wished?'❤️':'🤍'}</button>
     </div>
     <div class="name" onclick="openProduct('${p.id}')">${esc(p.name)}</div>
     <div class="unit">${esc(p.unit||'')}</div>
     <div class="row">
       <div class="price">${inr(finalPrice(p))}${p.discount>0?`<span class="strike">${inr(p.price)}</span>`:''}</div>
       ${oos ? '' : (qty>0
-        ? `<div class="qtybox"><button onclick="decCart('${p.id}')"></button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>`
+        ? `<div class="qtybox"><button onclick="decCart('${p.id}')">−</button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>`
         : `<button class="addbtn" onclick="addToCart('${p.id}')">+</button>`)}
     </div>
   </div>`;
@@ -736,7 +743,7 @@ function renderCategories(){
   list = sortList(list);
   return `
   <div class="pageheader">
-    <button class="iconbtn" onclick="go(state.selectedCategory?'categories':'home',{selectedCategory:null})"></button>
+    <button class="iconbtn" onclick="go(state.selectedCategory?'categories':'home',{selectedCategory:null})">←</button>
     <h2>${cat?esc(cat.name):'All Categories'}</h2>
   </div>
   ${!state.selectedCategory ? `
@@ -748,13 +755,13 @@ function renderCategories(){
       </div>`).join('')}
   </div></div>` : `
   <div class="section" style="padding-bottom:0;">${sortBar()}</div>
-  <div class="section"><div class="grid">${list.map(productCard).join('') || emptyBlock('','No products yet','Check back soon.')}</div></div>
+  <div class="section"><div class="grid">${list.map(productCard).join('') || emptyBlock('🥕','No products yet','Check back soon.')}</div></div>
   `}`;
 }
 
 function sortBar(){
   return `<div style="display:flex;gap:8px;overflow-x:auto;">
-    ${[['default','Relevance'],['priceLow','Price: LowHigh'],['priceHigh','Price: HighLow'],['discount','Best Discount']]
+    ${[['default','Relevance'],['priceLow','Price: Low→High'],['priceHigh','Price: High→Low'],['discount','Best Discount']]
       .map(([k,l])=>`<button class="tab ${state.sortBy===k?'active':''}" onclick="setSort('${k}')">${l}</button>`).join('')}
   </div>`;
 }
@@ -777,9 +784,9 @@ function renderSearch(){
   list = sortList(list);
   return `
   <div class="pageheader">
-    <button class="iconbtn" onclick="go('home')"></button>
+    <button class="iconbtn" onclick="go('home')">←</button>
     <div class="searchbar" style="margin:0;flex:1;box-shadow:none;border:1.5px solid var(--line);">
-      <span></span><input id="searchInput" autofocus value="${esc(state.searchQuery)}" oninput="onSearchInput(this.value)" placeholder="Search products�">
+      <span>🔎</span><input id="searchInput" autofocus value="${esc(state.searchQuery)}" oninput="onSearchInput(this.value)" placeholder="Search products…">
     </div>
   </div>
   <div class="section" style="padding-bottom:0;">
@@ -790,7 +797,7 @@ function renderSearch(){
     ${sortBar()}
   </div>
   <div class="section"><div class="grid">
-    ${q||state.selectedCategory ? (list.map(productCard).join('') || emptyBlock('','No matches','Try a different search term.')) : `<div class="empty" style="grid-column:1/-1;"><div class="ic"></div><h3>Search FreshCart</h3><p>Find products by name.</p></div>`}
+    ${q||state.selectedCategory ? (list.map(productCard).join('') || emptyBlock('🔍','No matches','Try a different search term.')) : `<div class="empty" style="grid-column:1/-1;"><div class="ic">🔎</div><h3>Search FreshCart</h3><p>Find products by name.</p></div>`}
   </div></div>`;
 }
 function onSearchInput(v){ state.searchQuery = v; render(); document.getElementById('searchInput')?.focus(); const el=document.getElementById('searchInput'); if(el){ el.selectionStart=el.selectionEnd=el.value.length; } }
@@ -808,15 +815,15 @@ function renderProductModal(){
     <div class="modal-sheet">
       <div class="pdetail-hero">
         ${p.imageUrl?`<img src="${esc(p.imageUrl)}">`:catEmoji(p.category)}
-        <button class="modal-close" onclick="closeModal()"></button>
+        <button class="modal-close" onclick="closeModal()">✕</button>
       </div>
       <div style="padding:18px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
             <h2 style="margin:0 0 4px;font-size:18px;">${esc(p.name)}</h2>
-            <div style="color:var(--muted);font-size:13px;">${esc(p.unit||'')} � ${esc(p.category||'')}</div>
+            <div style="color:var(--muted);font-size:13px;">${esc(p.unit||'')} · ${esc(p.category||'')}</div>
           </div>
-          <button class="wish" style="position:static;width:34px;height:34px;" onclick="toggleWish('${p.id}')">${wished?'':''}</button>
+          <button class="wish" style="position:static;width:34px;height:34px;" onclick="toggleWish('${p.id}')">${wished?'❤️':'🤍'}</button>
         </div>
         <div style="display:flex;align-items:baseline;gap:10px;margin:14px 0;">
           <span style="font-size:22px;font-weight:800;">${inr(finalPrice(p))}</span>
@@ -831,7 +838,7 @@ function renderProductModal(){
         ${oos ? `<button class="btn btn-outline" disabled>Out of Stock</button>` :
           qty>0
           ? `<div class="qty-controls-lg" style="justify-content:space-between;">
-               <div class="qty-controls-lg"><button onclick="decCart('${p.id}')"></button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>
+               <div class="qty-controls-lg"><button onclick="decCart('${p.id}')">−</button><span>${qty}</span><button onclick="addToCart('${p.id}')">+</button></div>
                <button class="btn btn-primary" style="width:auto;padding:13px 22px;" onclick="closeModal();go('cart')">Go to Cart</button>
              </div>`
           : `<button class="btn btn-primary" onclick="addToCart('${p.id}');render()">Add to Cart</button>`}
@@ -845,7 +852,7 @@ function renderCart(){
   const items = cartItems();
   if(items.length===0){
     return `<div class="pageheader"><h2>My Cart</h2></div>
-      <div class="empty"><div class="ic"></div><h3>Your cart is empty</h3><p>Add fresh groceries to get started.</p>
+      <div class="empty"><div class="ic">🛒</div><h3>Your cart is empty</h3><p>Add fresh groceries to get started.</p>
       <button class="btn btn-primary" style="width:auto;padding:12px 24px;" onclick="go('home')">Start Shopping</button></div>`;
   }
   return `
@@ -856,10 +863,10 @@ function renderCart(){
       <div class="info">
         <div class="n">${esc(c.product.name)}</div>
         <div class="u">${esc(c.product.unit||'')}</div>
-        <div style="font-weight:700;font-size:13px;margin-top:4px;">${inr(finalPrice(c.product))} <span style="color:var(--muted);font-weight:500;">� ${c.qty}</span></div>
+        <div style="font-weight:700;font-size:13px;margin-top:4px;">${inr(finalPrice(c.product))} <span style="color:var(--muted);font-weight:500;">× ${c.qty}</span></div>
       </div>
       <div class="right">
-        <div class="qtybox" style="background:var(--cream);"><button style="color:var(--ink);" onclick="decCart('${c.productId}')"></button><span style="color:var(--ink);">${c.qty}</span><button style="color:var(--ink);" onclick="addToCart('${c.productId}')">+</button></div>
+        <div class="qtybox" style="background:var(--cream);"><button style="color:var(--ink);" onclick="decCart('${c.productId}')">−</button><span style="color:var(--ink);">${c.qty}</span><button style="color:var(--ink);" onclick="addToCart('${c.productId}')">+</button></div>
         <button class="rm" onclick="removeFromCart('${c.productId}')">Remove</button>
       </div>
     </div>`).join('')}
@@ -879,13 +886,13 @@ function renderCart(){
   </div>
   <div class="summary">
     <div class="sumrow"><span>MRP Total</span><span>${inr(cartMrpTotal())}</span></div>
-    <div class="sumrow"><span>Product Discount</span><span> ${inr(cartDiscount())}</span></div>
-    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon (${esc(state.appliedCoupon.code)})</span><span> ${inr(couponDiscount())}</span></div>`:''}
+    <div class="sumrow"><span>Product Discount</span><span>− ${inr(cartDiscount())}</span></div>
+    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon (${esc(state.appliedCoupon.code)})</span><span>− ${inr(couponDiscount())}</span></div>`:''}
     <div class="sumrow"><span>Delivery Charge</span><span>${deliveryCharge()===0?'FREE':inr(deliveryCharge())}</span></div>
     <div class="sumrow total"><span>To Pay</span><span>${inr(cartTotal())}</span></div>
   </div>
   <div style="height:90px;"></div>
-  <div class="stickybar"><button class="btn btn-primary" onclick="go('checkout')">Proceed to Checkout </button></div>
+  <div class="stickybar"><button class="btn btn-primary" onclick="go('checkout')">Proceed to Checkout →</button></div>
   `;
 }
 
@@ -893,14 +900,14 @@ function renderCart(){
 function renderCheckout(){
   const saved = state.profile?.addresses?.[0];
   return `
-  <div class="pageheader"><button class="iconbtn" onclick="go('cart')"></button><h2>Checkout</h2></div>
+  <div class="pageheader"><button class="iconbtn" onclick="go('cart')">←</button><h2>Checkout</h2></div>
   <div class="section" style="padding-bottom:0;">
     <h3 style="font-size:14px;margin:0 0 10px;">Delivery Details</h3>
     <form id="checkoutForm" onsubmit="return false;">
       <div class="field"><label>Full name</label><input name="name" required value="${esc(state.profile?.name||'')}"></div>
       <div class="field"><label>Phone number</label><input name="phone" required value="${esc(state.profile?.phone||'')}"></div>
       <div class="field"><label>Delivery address</label><textarea name="address" rows="2" required placeholder="House no, street, area">${esc(saved?.line||'')}</textarea></div>
-      <div class="field"><label>Landmark</label><input name="landmark" placeholder="Near�" value="${esc(saved?.landmark||'')}"></div>
+      <div class="field"><label>Landmark</label><input name="landmark" placeholder="Near…" value="${esc(saved?.landmark||'')}"></div>
       <div class="field"><label>Pincode</label><input name="pincode" required pattern="[0-9]{6}" placeholder="6-digit pincode" value="${esc(saved?.pincode||'')}"></div>
     </form>
   </div>
@@ -918,7 +925,7 @@ function renderCheckout(){
   </div>
   <div class="summary">
     <div class="sumrow"><span>Subtotal</span><span>${inr(cartSubtotal())}</span></div>
-    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon discount</span><span> ${inr(couponDiscount())}</span></div>`:''}
+    ${state.appliedCoupon?`<div class="sumrow"><span>Coupon discount</span><span>− ${inr(couponDiscount())}</span></div>`:''}
     <div class="sumrow"><span>Delivery</span><span>${deliveryCharge()===0?'FREE':inr(deliveryCharge())}</span></div>
     <div class="sumrow total"><span>Total Payable</span><span>${inr(cartTotal())}</span></div>
   </div>
@@ -948,13 +955,13 @@ function renderOnlinePayBlock(){
   const upiLink = buildUpiLink(amount, ps);
   const qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(upiLink);
   return `<div class="qr-box">
-    <a href="${esc(upiLink)}" class="btn btn-primary" style="text-decoration:none;display:inline-flex;margin-bottom:16px;"> Pay ${inr(amount)} via UPI App</a>
+    <a href="${esc(upiLink)}" class="btn btn-primary" style="text-decoration:none;display:inline-flex;margin-bottom:16px;">📲 Pay ${inr(amount)} via UPI App</a>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">On a computer? Scan this QR with your phone's UPI app instead:</div>
     <img src="${qrImg}" alt="Scan to pay" style="width:170px;height:170px;border-radius:12px;background:#fff;padding:8px;">
     <div style="margin-top:10px;font-weight:700;font-size:14px;">${esc(ps.merchantName||'Store')}</div>
     <div style="color:var(--muted);font-size:12px;">UPI ID: ${esc(ps.upiId||'')}</div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5;">
-      The button/QR above already has the exact amount filled in � just confirm in your UPI app.
+      The button/QR above already has the exact amount filled in — just confirm in your UPI app.
       After paying, place your order below; an admin verifies the payment before marking it PAID.
       Entering a UTR or screenshot does not by itself confirm payment.
     </div>
@@ -974,7 +981,7 @@ function renderOrderSuccess(){
   const o = state.orders.find(x=>x.id===state.currentOrderId);
   return `<div class="auth-wrap" style="background:var(--cream);min-height:100vh;">
     <div style="text-align:center;padding-top:40px;">
-      <div style="font-size:60px;"></div>
+      <div style="font-size:60px;">✅</div>
       <h2 style="margin:14px 0 6px;">Order placed!</h2>
       <p style="color:var(--muted);font-size:13px;">Order ID: ${state.currentOrderId?.slice(0,8)}</p>
       <p style="color:var(--muted);font-size:13px;">${o?inr(o.total):''}</p>
@@ -988,11 +995,11 @@ function renderOrderSuccess(){
 
 /* ---- Orders ---- */
 function renderOrders(){
-  if(!state.orders.length) return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()"></button></div>
-    <div class="empty"><div class="ic"></div><h3>No orders yet</h3><p>Your order history will show up here.</p></div>`;
+  if(!state.orders.length) return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()">🔄</button></div>
+    <div class="empty"><div class="ic">📦</div><h3>No orders yet</h3><p>Your order history will show up here.</p></div>`;
   const current = state.orders.filter(o=>!['DELIVERED','CANCELLED'].includes(o.orderStatus));
   const past = state.orders.filter(o=>['DELIVERED','CANCELLED'].includes(o.orderStatus));
-  return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()"></button></div>
+  return `<div class="pageheader"><h2>My Orders</h2><button class="iconbtn" style="margin-left:auto;" onclick="refreshOrders()">🔄</button></div>
     ${current.length?`<div class="section" style="padding-bottom:0;"><h3 style="font-size:13px;color:var(--muted);">CURRENT ORDERS</h3></div>${current.map(orderCard).join('')}`:''}
     ${past.length?`<div class="section" style="padding-bottom:0;"><h3 style="font-size:13px;color:var(--muted);">PAST ORDERS</h3></div>${past.map(orderCard).join('')}`:''}
   `;
@@ -1003,29 +1010,29 @@ function orderCard(o){
   const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '';
   return `<div class="ordercard" onclick="go('orderDetail',{currentOrderId:'${o.id}'})">
     <div class="top">
-      <div><div class="oid">Order #${o.id.slice(0,8)} � ${date}</div><div class="amt">${inr(o.total)}</div></div>
+      <div><div class="oid">Order #${o.id.slice(0,8)} · ${date}</div><div class="amt">${inr(o.total)}</div></div>
       <span class="chip ${o.orderStatus}">${STATUS_LABEL[o.orderStatus]||o.orderStatus}</span>
     </div>
-    <div style="font-size:12px;color:var(--muted);">${o.items.length} item${o.items.length>1?'s':''} � <span class="chip ${o.paymentStatus}" style="padding:2px 8px;">${o.paymentStatus}</span></div>
+    <div style="font-size:12px;color:var(--muted);">${o.items.length} item${o.items.length>1?'s':''} · <span class="chip ${o.paymentStatus}" style="padding:2px 8px;">${o.paymentStatus}</span></div>
   </div>`;
 }
 function renderOrderDetail(){
   const o = state.orders.find(x=>x.id===state.currentOrderId);
-  if(!o) return `<div class="pageheader"><button class="iconbtn" onclick="go('orders')"></button><h2>Order</h2></div><div class="empty"><p>Order not found.</p></div>`;
+  if(!o) return `<div class="pageheader"><button class="iconbtn" onclick="go('orders')">←</button><h2>Order</h2></div><div class="empty"><p>Order not found.</p></div>`;
   const stepIdx = STATUS_STEPS.indexOf(o.orderStatus);
   return `
-  <div class="pageheader"><button class="iconbtn" onclick="go('orders')"></button><h2>Order #${o.id.slice(0,8)}</h2></div>
+  <div class="pageheader"><button class="iconbtn" onclick="go('orders')">←</button><h2>Order #${o.id.slice(0,8)}</h2></div>
   <div class="section">
     ${o.orderStatus==='CANCELLED' ? `<div class="empty" style="padding:20px;"><span class="chip CANCELLED">Cancelled</span></div>` : `
     <div class="tracker">
-      ${STATUS_STEPS.map((s,i)=>`<div class="tstep ${i<=stepIdx?'done':''}"><div class="dot">${i<=stepIdx?'':''}</div><div class="lbl">${STATUS_LABEL[s]}</div></div>`).join('')}
+      ${STATUS_STEPS.map((s,i)=>`<div class="tstep ${i<=stepIdx?'done':''}"><div class="dot">${i<=stepIdx?'✓':''}</div><div class="lbl">${STATUS_LABEL[s]}</div></div>`).join('')}
     </div>`}
   </div>
   <div class="summary">
     <h3 style="font-size:14px;margin:0 0 10px;">Items</h3>
-    ${o.items.map(it=>`<div class="sumrow"><span>${esc(it.name)} � ${it.qty}</span><span>${inr(it.finalPrice*it.qty)}</span></div>`).join('')}
+    ${o.items.map(it=>`<div class="sumrow"><span>${esc(it.name)} × ${it.qty}</span><span>${inr(it.finalPrice*it.qty)}</span></div>`).join('')}
     <div class="sumrow" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;"><span>Subtotal</span><span>${inr(o.subtotal)}</span></div>
-    <div class="sumrow"><span>Discount</span><span> ${inr(o.discount)}</span></div>
+    <div class="sumrow"><span>Discount</span><span>− ${inr(o.discount)}</span></div>
     <div class="sumrow"><span>Delivery</span><span>${o.deliveryCharge===0?'FREE':inr(o.deliveryCharge)}</span></div>
     <div class="sumrow total"><span>Total</span><span>${inr(o.total)}</span></div>
   </div>
@@ -1037,7 +1044,7 @@ function renderOrderDetail(){
   <div class="summary">
     <h3 style="font-size:14px;margin:0 0 10px;">Delivery Address</h3>
     <p style="font-size:13px;margin:0;color:var(--muted);line-height:1.6;">
-      ${esc(o.customerName)} � ${esc(o.customerPhone)}<br>
+      ${esc(o.customerName)} · ${esc(o.customerPhone)}<br>
       ${esc(o.address?.line)}${o.address?.landmark?', near '+esc(o.address.landmark):''}<br>
       Pincode: ${esc(o.address?.pincode)}
     </p>
@@ -1054,20 +1061,20 @@ function renderProfile(){
     <div class="avatar">${initials}</div>
     <div><div style="font-weight:700;font-size:16px;">${esc(p.name||'Guest')}</div><div style="color:var(--muted);font-size:12px;">${esc(p.email||'')}</div></div>
   </div>
-  <div class="profile-row"><div class="l"><span class="ic"></span>Phone</div><div style="color:var(--muted);font-size:13px;">${esc(p.phone||'�')}</div></div>
-  <div class="profile-row" onclick="go('addresses')"><div class="l"><span class="ic"></span>Saved Addresses</div><span>�</span></div>
-  <div class="profile-row" onclick="go('orders')"><div class="l"><span class="ic"></span>Order History</div><span>�</span></div>
-  <div class="profile-row"><div class="l"><span class="ic"></span>Wishlist</div><div style="color:var(--muted);font-size:13px;">${state.wishlist.length} items</div></div>
+  <div class="profile-row"><div class="l"><span class="ic">📱</span>Phone</div><div style="color:var(--muted);font-size:13px;">${esc(p.phone||'—')}</div></div>
+  <div class="profile-row" onclick="go('addresses')"><div class="l"><span class="ic">📍</span>Saved Addresses</div><span>›</span></div>
+  <div class="profile-row" onclick="go('orders')"><div class="l"><span class="ic">📦</span>Order History</div><span>›</span></div>
+  <div class="profile-row"><div class="l"><span class="ic">❤️</span>Wishlist</div><div style="color:var(--muted);font-size:13px;">${state.wishlist.length} items</div></div>
   <div class="section">
     <button class="btn btn-danger" onclick="handleLogout()">Log Out</button>
   </div>`;
 }
 function renderAddresses(){
   const addr = state.profile?.addresses?.[0];
-  return `<div class="pageheader"><button class="iconbtn" onclick="go('profile')"></button><h2>Saved Addresses</h2></div>
+  return `<div class="pageheader"><button class="iconbtn" onclick="go('profile')">←</button><h2>Saved Addresses</h2></div>
   <div class="section">
     ${addr ? `<div class="summary" style="margin:0;"><p style="font-size:13px;margin:0;line-height:1.6;">${esc(addr.line)}<br>${esc(addr.landmark||'')}<br>Pincode: ${esc(addr.pincode)}</p></div>`
-      : `<div class="empty"><div class="ic"></div><h3>No saved addresses</h3><p>Addresses you use at checkout are saved here.</p></div>`}
+      : `<div class="empty"><div class="ic">📍</div><h3>No saved addresses</h3><p>Addresses you use at checkout are saved here.</p></div>`}
   </div>`;
 }
 
@@ -1083,6 +1090,15 @@ window.state = state;
 
 render();
 initAuth();
+
+// Register the service worker (needed for PWA installability / APK
+// packaging via PWABuilder). Silently no-ops if unsupported or if the
+// page is opened as a local file:// URL instead of over https.
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
